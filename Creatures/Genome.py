@@ -1,16 +1,26 @@
 # genome
-def __init__(self, size, strength, speed, fortitude, intelligence, longevity, fertility, metabolism):
+class Stat():
+    def __init__(self, value: int, max: int, metacost: float, growcost: float):
+        self.value = value
+        self.max = max
+        self.metacost = metacost
+        self.growcost = growcost
 
-    self.__size = size
-    self.__strength = strength
-    self.__speed = speed
-    self.__fortitude = fortitude
-    self.__intelligence = intelligence
-    self.__longevity = longevity
-    self.__fertility = fertility
-    self.__metabolism = metabolism
+def __init__(self, deadliness, speed, fortitude, intelligence, longevity, fertility):
+
+    self.__stats = {
+        deadliness: Stat(value = deadliness, max = 4, metacost = 1.0, growcost = 1.0),
+        speed: Stat(value = speed, max = 4, metacost = 1.0, growcost = 1.0),
+        fortitude: Stat(value = fortitude, max = 4, metacost = 1.0, growcost = 1.0),
+        intelligence: Stat(value = intelligence, max = 4, metacost = 1.0, growcost = 1.0),
+        longevity: Stat(value = longevity, max = 4, metacost = 1.0, growcost = 1.0),
+        fertility: Stat(value = deadliness, max = 4, metacost = 1.0, growcost = 1.0),
+    }
+    self.__size = sum([stat.value for stat in self.__stats])
+    self.__metabolism = sum(self.__stats.values().map(lambda stat: stat.value * stat.metacost))
+    self.sprintMoves = 0
     # *size
-    # *strength
+    # *deadliness
     # *speed
     # *fortitude
     # *intelligence
@@ -22,41 +32,40 @@ def __init__(self, size, strength, speed, fortitude, intelligence, longevity, fe
 
 @property 
 def metabolism(self):
-    return self.__metabolism + (self.__intelligence + self.__strength + self.__speed + self.__size) / 4
+    # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
+    return self.__metabolism + self.sprintMoves * self.size
 
 @property
 def size(self):
-    return self.__strength - self.__fertility / 4
+    # return self.__deadliness - self.__fertility / 4
+    # size is just the sum of all stats
+    return self.__size
 
 @property
 def fertility(self):
-    return self.__longevity / 3
+    return self.__fertility - self.__longevity / 3
 
 @property
-def metabolism(self):
-    return (self.__intelligence + self.__strength + self.__speed + self.__size) / 4
-
-@property
-def strength(self):
-    strength = self.__strength - self.__speed / 3 - fertility / 4
-    strength += size / 2
-    return strength
+def deadliness(self):
+    deadliness = self.__deadliness - self.__speed / 3 - fertility / 4
+    deadliness += size / 2
+    return deadliness
 
 @property
 def speed(self):
-    return (self.__speed - self.__strength / 2) * 1.5
+    return (self.__speed - self.__deadliness / 2) * 1.5
 
 @property
 def longevity(self):
-    longevity = self.__longevity / min(self.__size / self.__strength, 1)
+    longevity = self.__longevity / min(self.__size / self.__deadliness, 1)
     return longevity
-    # // longevity declines when strength < size
-    # weakness = size / strength
+    # // longevity declines when deadliness < size
+    # weakness = size / deadliness
     # longevity /= weakness
     # // higher stats, needs more food
-    # metabolism += (intelligence + strength + speed + size) / 4
-    # // trade-off between strength and speed
-    # strength -= speed / 3
-    # speed = (speed - strength / 2) * 1.5
-    # // size adds to strength, but only after weakness is subtracted from longevity
-    # strength += size / 2
+    # metabolism += (intelligence + deadliness + speed + size) / 4
+    # // trade-off between deadliness and speed
+    # deadliness -= speed / 3
+    # speed = (speed - deadliness / 2) * 1.5
+    # // size adds to deadliness, but only after weakness is subtracted from longevity
+    # deadliness += size / 2
