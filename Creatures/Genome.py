@@ -1,3 +1,4 @@
+import random
 # genome
 class Stat():
     def __init__(self, value: int, max: int, metacost: float, growcost: float):
@@ -6,19 +7,34 @@ class Stat():
         self.metacost = metacost
         self.growcost = growcost
 
-def __init__(self, deadliness, speed, fortitude, intelligence, longevity, fertility):
+    def __add__(self, n):
+        return min(self + n, self.max)
+    
+    def __sub__(self, n):
+        return max(self - n, 0)
 
-    self.__stats = {
-        deadliness: Stat(value = deadliness, max = 4, metacost = 1.0, growcost = 1.0),
-        speed: Stat(value = speed, max = 4, metacost = 1.0, growcost = 1.0),
-        fortitude: Stat(value = fortitude, max = 4, metacost = 1.0, growcost = 1.0),
-        intelligence: Stat(value = intelligence, max = 4, metacost = 1.0, growcost = 1.0),
-        longevity: Stat(value = longevity, max = 4, metacost = 1.0, growcost = 1.0),
-        fertility: Stat(value = deadliness, max = 4, metacost = 1.0, growcost = 1.0),
-    }
+mutationRate = 0.5
+
+def __init__(self, energy: float, deadliness: int, speed: int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int):
+
+    self.deadliness = Stat(value = deadliness, max = 4, metacost = 1.0, growcost = 1.0)
+    self.speed = Stat(value = speed, max = 12, metacost = 1.0, growcost = 1.0)
+    self.fortitude = Stat(value = fortitude, max = 4, metacost = 1.0, growcost = 1.0)
+    self.intelligence = Stat(value = intelligence, max = 4, metacost = 1.0, growcost = 1.0)
+    self.longevity = Stat(value = longevity, max = 4, metacost = 1.0, growcost = 1.0)
+    self.meateating = Stat(value = meateating, max = 4, metacost = 1.0, growcost = 1.0)
+    self.planteating = Stat(value = planteating, max = 4, metacost = 1.0, growcost = 1.0)
+    self.fertility = Stat(value = fertility, max = 4, metacost = 1.0, growcost = 1.0)
+
+    self.__stats = [deadliness, speed, fortitude, intelligence, longevity, fertility, meateating, planteating]
+
     self.__size = sum([stat.value for stat in self.__stats])
     self.__metabolism = sum(self.__stats.values().map(lambda stat: stat.value * stat.metacost))
+
+    
     self.sprintMoves = 0
+    self.energy = energy
+    self.age = 0
     # *size
     # *deadliness
     # *speed
@@ -30,10 +46,16 @@ def __init__(self, deadliness, speed, fortitude, intelligence, longevity, fertil
 
     return
 
+def mutate(self):
+    if random.random() > mutationRate: return 0
+
+    self.__stats[int(random.random * self.__stats.length)] += int(random.random() * 2) * 2 - 1
+    return self
+
 @property 
 def metabolism(self):
     # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-    return self.__metabolism + self.sprintMoves * self.size
+    return self.__metabolism + self.sprintMoves / self.stamina
 
 @property
 def size(self):
@@ -44,28 +66,3 @@ def size(self):
 @property
 def fertility(self):
     return self.__fertility - self.__longevity / 3
-
-@property
-def deadliness(self):
-    deadliness = self.__deadliness - self.__speed / 3 - fertility / 4
-    deadliness += size / 2
-    return deadliness
-
-@property
-def speed(self):
-    return (self.__speed - self.__deadliness / 2) * 1.5
-
-@property
-def longevity(self):
-    longevity = self.__longevity / min(self.__size / self.__deadliness, 1)
-    return longevity
-    # // longevity declines when deadliness < size
-    # weakness = size / deadliness
-    # longevity /= weakness
-    # // higher stats, needs more food
-    # metabolism += (intelligence + deadliness + speed + size) / 4
-    # // trade-off between deadliness and speed
-    # deadliness -= speed / 3
-    # speed = (speed - deadliness / 2) * 1.5
-    # // size adds to deadliness, but only after weakness is subtracted from longevity
-    # deadliness += size / 2
