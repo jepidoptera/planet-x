@@ -1,8 +1,9 @@
 import random
+
 # genome
 class Stat():
     def __init__(self, value: int, max: int, metacost: float, growcost: float):
-        self.value = value
+        self.value = min(value, max)
         self.max = max
         self.metacost = metacost
         self.growcost = growcost
@@ -13,18 +14,71 @@ class Stat():
     def __sub__(self, n):
         return max(self - n, 0)
 
+class Fortitude(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=1.0, growcost=1.5)
+
+class Deadliness(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=2.0, growcost=1.0)
+
+class Speed(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=12, metacost=1.5, growcost=1.0)
+
+class Longevity(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=20, metacost=1.0, growcost=1.0)
+
+class Intelligence(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=128, metacost=0.5, growcost=0.2)
+
+class MeatEating(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=1.0, growcost=0.0)
+
+class PlantEating(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=1.0, growcost=0.0)
+
+class Fertility(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=1.5, growcost=0)
+
+class SightRange(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=1.0, growcost=0.4)
+
+class PeripheralVision(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=4, metacost=1.0, growcost=0.4)
+
+class Stamina(Stat):
+    def __init__(self, value):
+        super().__init__(value=value, max=7, metacost=1.0, growcost=1.0)
+
+class Neuron():
+    def __init__(self, input, output):
+        self.input = input
+        self.output = output
+        pass
+
 mutationRate = 0.5
 
-def __init__(self, energy: float, deadliness: int, speed: int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int):
+def __init__(self, energy: float, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, peripheralvision: int):
 
-    self.deadliness = Stat(value = deadliness, max = 4, metacost = 1.0, growcost = 1.0)
-    self.speed = Stat(value = speed, max = 12, metacost = 1.0, growcost = 1.0)
-    self.fortitude = Stat(value = fortitude, max = 4, metacost = 1.0, growcost = 1.0)
-    self.intelligence = Stat(value = intelligence, max = 4, metacost = 1.0, growcost = 1.0)
-    self.longevity = Stat(value = longevity, max = 4, metacost = 1.0, growcost = 1.0)
-    self.meateating = Stat(value = meateating, max = 4, metacost = 1.0, growcost = 1.0)
-    self.planteating = Stat(value = planteating, max = 4, metacost = 1.0, growcost = 1.0)
-    self.fertility = Stat(value = fertility, max = 4, metacost = 1.0, growcost = 1.0)
+    self.__deadliness = Deadliness(value=deadliness)
+    self.__speed = Speed(value=speed)
+    self.__stamina = Stamina(value=stamina)
+    self.__fortitude = Fortitude(value=fortitude)
+    self.__intelligence = Intelligence(value=intelligence)
+    self.__longevity = Longevity(value=longevity)
+    self.__meateating = MeatEating(value=meateating)
+    self.__planteating = PlantEating(value=planteating)
+    self.__fertility = Fertility(value=fertility)
+    self.__sightrange = SightRange(value=sightrange)
+    self.__peripheralvision = PeripheralVision(value=peripheralvision)
 
     self.__stats = [deadliness, speed, fortitude, intelligence, longevity, fertility, meateating, planteating]
 
@@ -43,6 +97,10 @@ def __init__(self, energy: float, deadliness: int, speed: int, fortitude: int, i
     # *longevity
     # *fertility
     # *metabolism
+    # *meateating
+    # *planteating
+    # *sightrange
+    # *peripheralvision
 
     return
 
@@ -66,3 +124,44 @@ def size(self):
 @property
 def fertility(self):
     return self.__fertility - self.__longevity / 3
+
+@property
+def meatEating(self):
+    return self.__meateating - self.__planteating / 2
+
+@property
+def plantEating(self):
+    return self.__planteating - self.__meateating / 2
+
+@property
+def sightRange(self):
+    return self.__sightrange
+
+@property
+def peripheralVision(self):
+    return self.__peripheralvision
+
+@property
+def deadliness(self):
+    return self.__deadliness
+
+@property
+def speed(self):
+    return self.__speed
+
+@property
+def stamina(self):
+    return self.__stamina - self.speed / 3
+
+@property
+def fortitude(self):
+    return self.__fortitude
+
+@property
+def intelligence(self):
+    return self.__intelligence - self.__sightrange * self.__peripheralvision
+
+@property
+def longevity(self):
+    return self.__longevity
+
