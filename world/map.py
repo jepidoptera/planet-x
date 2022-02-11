@@ -1,3 +1,6 @@
+from math import *
+sign = lambda x: copysign(1, x)
+
 class Node():
     def __init__(self, index, neighbors: list):
         self.index = index
@@ -7,16 +10,16 @@ class Node():
     
 def calcVisionTree(startingNode: Node, distance: int):
     mergedDict = {n:True for n in startingNode.neighbors + [startingNode]}
-    visionTree = [[[node]] + [[] for i in range(distance)] for node in startingNode.neighbors]
+    visionTree = [[[node]] + [[] for i in range(distance - 1)] for node in startingNode.neighbors]
 
-    for i in range(distance):
+    for i in range(distance - 1):
         visionLayer = {}
         for t in range(len(visionTree)):
             nodesThisTree = 0
             for n in visionTree[t][i]:
                 # n is a node
                 for j in range(len(n.neighbors)):
-                    nextNode = n.neighbors[(j + t) % len(n.neighbors)]
+                    nextNode = n.neighbors[(j + t + 3 * (t % 2)) % len(n.neighbors)]
                     if nextNode not in mergedDict.keys():
                         if nextNode not in visionLayer.keys():
                             visionLayer[nextNode] = t
@@ -30,10 +33,13 @@ def calcVisionTree(startingNode: Node, distance: int):
             cone = visionLayer[node]
             visionTree[cone][i+1].append(node)
             mergedDict[node] = True
-    for cone in range(len(visionTree)):
-        print ("cone {0}".format(cone))
-        for sightrange in range(len(visionTree[cone])):
-            print ([node.index for node in visionTree[cone][sightrange]])
+    # for cone in range(len(visionTree)):
+    #     print ("cone {0}".format(cone))
+    #     for sightrange in range(len(visionTree[cone])):
+    #         visionTree[cone][sightrange].sort(key = lambda node: node.index)
+    #         print ([node.index for node in visionTree[cone][sightrange]])
+    
+    return visionTree
 
 class Map():
     def __init__(self, mapWidth, mapHeight):
@@ -54,11 +60,27 @@ class Map():
             # rotate the list
             # node.neighbors = node.neighbors[i * 11 % 6:] + node.neighbors[:i * 11 % 6]
         # print ("node {0} neighbors: {1}".format(int(self.totalNodes / 2), [n.index for n in self.nodes[int(self.totalNodes / 2)].neighbors]))
+
+        for node in self.nodes:
+            node.visionTree = calcVisionTree(node, 10)
     
     def print(self):
         for y in range(self.mapHeight):
             print (''.join(["{0}    ".format(y + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
             print (''.join(["  {0}  ".format(y + self.mapHeight + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
+
+    def printVisionCone(self, startIndex: int, direction: int):
+        visionCone = self.nodes[startIndex].visionTree[direction]
+        nodeList = [node.index for layer in visionCone for node in layer]
+
+        def showVision(index):
+            if index == startIndex: return "#"* len(str(index))
+            return index if index not in nodeList else "█"*(len(str(index)))
+
+        for y in range(self.mapHeight):
+            print(''.join(["{0}    ".format(showVision(y + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
+            print(''.join(["  {0}  ".format(showVision(y + self.mapHeight + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
+
 
 # map = Map(16, 10)
 # calcVisionTree(map.nodes[45], 3)
