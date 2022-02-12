@@ -1,14 +1,14 @@
 from math import *
 sign = lambda x: copysign(1, x)
 
-class Node():
+class MapNode():
     def __init__(self, index, neighbors: list):
         self.index = index
         self.neighbors = neighbors
         self.occupant = None
         self.visionTree = []
     
-def calcVisionTree(startingNode: Node, distance: int):
+def calcVisionTree(startingNode: MapNode, distance: int):
     mergedDict = {n:True for n in startingNode.neighbors + [startingNode]}
     visionTree = [[[node]] + [[] for i in range(distance - 1)] for node in startingNode.neighbors]
 
@@ -46,7 +46,7 @@ class Map():
         self.mapHeight = mapHeight
         self.mapWidth = mapWidth
         self.totalNodes = mapWidth * mapHeight
-        self.nodes = [Node(n, []) for n in range(self.totalNodes)]
+        self.nodes = [MapNode(n, []) for n in range(self.totalNodes)]
         
         for i, node in enumerate(self.nodes):
             neighborIndexes = []
@@ -69,12 +69,25 @@ class Map():
             print (''.join(["{0}    ".format(y + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
             print (''.join(["  {0}  ".format(y + self.mapHeight + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
 
-    def printVisionCone(self, startIndex: int, direction: int):
-        visionCone = self.nodes[startIndex].visionTree[direction]
-        nodeList = [node.index for layer in visionCone for node in layer]
+    def printVisionCone(self, startIndex: int, direction: int, distance: int, coneWidth: int):
+        cones = [
+            # layer[a] for a in range[distance]
+            self.nodes[startIndex].visionTree[(direction + n) % len(self.nodes[startIndex].neighbors)][:distance] 
+            for n in [-int(n/2) if n % 2== 0 else int(n/2) + 1 
+            for n in range((coneWidth - 1) * 2 + 1)] 
+        ]
+        visionLayers = [
+            # don't worry about it, it works fine
+            [node.index for cone in [[cones[a][b] 
+            for a in range(len(cones))] for b in range(distance)][i] 
+            for node in cone] for i in range(distance)
+        ]
+        nodeList = [node for cone in visionLayers for node in cone]
+        # visionCone = self.nodes[startIndex].visionTree[direction]
+        # nodeList = [node.index for layer in visionCone[:distance] for node in layer]
 
         def showVision(index):
-            if index == startIndex: return "#"* len(str(index))
+            if index == startIndex: return "▓"* len(str(index))
             return index if index not in nodeList else "█"*(len(str(index)))
 
         for y in range(self.mapHeight):
