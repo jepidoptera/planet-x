@@ -1,4 +1,5 @@
-import random
+from operator import mod
+from random import random
 
 # genome
 class Stat():
@@ -58,110 +59,113 @@ class Stamina(Stat):
     def __init__(self, value):
         super().__init__(value=value, max=7, metacost=1.0, growcost=1.0)
 
-class Neuron():
-    def __init__(self, input, output):
-        self.input = input
-        self.output = output
-        pass
+def modString(string, char, position):
+    return string[:position] + char + string[position+1:]
 
-mutationRate = 0.5
+class Genome():
+    mutationRate = 0.5
+    def __init__(self, energy: float, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, peripheralvision: int, axons: str):
 
-def __init__(self, energy: float, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, peripheralvision: int):
+        self.__deadliness = Deadliness(value=deadliness)
+        self.__speed = Speed(value=speed)
+        self.__stamina = Stamina(value=stamina)
+        self.__fortitude = Fortitude(value=fortitude)
+        self.__intelligence = Intelligence(value=intelligence)
+        self.__longevity = Longevity(value=longevity)
+        self.__meateating = MeatEating(value=meateating)
+        self.__planteating = PlantEating(value=planteating)
+        self.__fertility = Fertility(value=fertility)
+        self.__sightrange = SightRange(value=sightrange)
+        self.__peripheralvision = PeripheralVision(value=peripheralvision)
 
-    self.__deadliness = Deadliness(value=deadliness)
-    self.__speed = Speed(value=speed)
-    self.__stamina = Stamina(value=stamina)
-    self.__fortitude = Fortitude(value=fortitude)
-    self.__intelligence = Intelligence(value=intelligence)
-    self.__longevity = Longevity(value=longevity)
-    self.__meateating = MeatEating(value=meateating)
-    self.__planteating = PlantEating(value=planteating)
-    self.__fertility = Fertility(value=fertility)
-    self.__sightrange = SightRange(value=sightrange)
-    self.__peripheralvision = PeripheralVision(value=peripheralvision)
+        self.__stats = [deadliness, speed, fortitude, intelligence, longevity, fertility, meateating, planteating]
 
-    self.__stats = [deadliness, speed, fortitude, intelligence, longevity, fertility, meateating, planteating]
+        self.__size = sum([stat.value for stat in self.__stats])
+        self.__metabolism = sum(self.__stats.values().map(lambda stat: stat.value * stat.metacost))
+        
+        self.axons = axons
+        
+        self.sprintMoves = 0
+        self.energy = energy
+        self.age = 0
+        # *size
+        # *deadliness
+        # *speed
+        # *fortitude
+        # *intelligence
+        # *longevity
+        # *fertility
+        # *metabolism
+        # *meateating
+        # *planteating
+        # *sightrange
+        # *peripheralvision
 
-    self.__size = sum([stat.value for stat in self.__stats])
-    self.__metabolism = sum(self.__stats.values().map(lambda stat: stat.value * stat.metacost))
+        return
 
-    
-    self.sprintMoves = 0
-    self.energy = energy
-    self.age = 0
-    # *size
-    # *deadliness
-    # *speed
-    # *fortitude
-    # *intelligence
-    # *longevity
-    # *fertility
-    # *metabolism
-    # *meateating
-    # *planteating
-    # *sightrange
-    # *peripheralvision
+    def mutate(self):
+        if random.random() > self.mutationRate: return 0
 
-    return
+        brainMutation = int(random() * 2)
 
-def mutate(self):
-    if random.random() > mutationRate: return 0
+        if (brainMutation):
+            self.axons = modString(self.axons, random.choice('1234567890abcdef'), int(random() * len(self.axons)))
+        else:
+            self.__stats[int(random.random() * len(self.__stats))] += int(random.random() * 2) * 2 - 1
+        return self
 
-    self.__stats[int(random.random * self.__stats.length)] += int(random.random() * 2) * 2 - 1
-    return self
+    @property 
+    def metabolism(self):
+        # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
+        return self.__metabolism + self.sprintMoves / self.stamina
 
-@property 
-def metabolism(self):
-    # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-    return self.__metabolism + self.sprintMoves / self.stamina
+    @property
+    def size(self):
+        # return self.__deadliness - self.__fertility / 4
+        # size is just the sum of all stats
+        return self.__size
 
-@property
-def size(self):
-    # return self.__deadliness - self.__fertility / 4
-    # size is just the sum of all stats
-    return self.__size
+    @property
+    def fertility(self):
+        return self.__fertility - self.__longevity / 3
 
-@property
-def fertility(self):
-    return self.__fertility - self.__longevity / 3
+    @property
+    def meatEating(self):
+        return self.__meateating - self.__planteating / 2
 
-@property
-def meatEating(self):
-    return self.__meateating - self.__planteating / 2
+    @property
+    def plantEating(self):
+        return self.__planteating - self.__meateating / 2
 
-@property
-def plantEating(self):
-    return self.__planteating - self.__meateating / 2
+    @property
+    def sightRange(self):
+        return self.__sightrange
 
-@property
-def sightRange(self):
-    return self.__sightrange
+    @property
+    def peripheralVision(self):
+        return self.__peripheralvision
 
-@property
-def peripheralVision(self):
-    return self.__peripheralvision
+    @property
+    def deadliness(self):
+        return self.__deadliness
 
-@property
-def deadliness(self):
-    return self.__deadliness
+    @property
+    def speed(self):
+        return self.__speed
 
-@property
-def speed(self):
-    return self.__speed
+    @property
+    def stamina(self):
+        return self.__stamina - self.speed / 3
 
-@property
-def stamina(self):
-    return self.__stamina - self.speed / 3
+    @property
+    def fortitude(self):
+        return self.__fortitude
 
-@property
-def fortitude(self):
-    return self.__fortitude
+    @property
+    def intelligence(self):
+        return self.__intelligence - self.__sightrange * self.__peripheralvision
 
-@property
-def intelligence(self):
-    return self.__intelligence - self.__sightrange * self.__peripheralvision
-
-@property
-def longevity(self):
-    return self.__longevity
+    @property
+    def longevity(self):
+        return self.__longevity
 
