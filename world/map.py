@@ -1,13 +1,26 @@
+from enum import Enum
 from math import *
+from creatures.creature import Creature
 sign = lambda x: copysign(1, x)
 
+class ResourceType(Enum):
+    grass = 0
+    fruit = 1
+    meat = 2
+    tree = 3
+
+class Resource():
+    type: ResourceType
+    value: int
+
 class MapNode():
-    def __init__(self, index, neighbors: list):
+    def __init__(self, index: int, neighbors: list):
         self.index = index
         self.neighbors = neighbors
-        self.occupant = None
+        self.occupant: Creature
+        self.resource: Resource
         self.visionTree = []
-    
+
 def calcVisionTree(startingNode: MapNode, distance: int):
     mergedDict = {n:True for n in startingNode.neighbors + [startingNode]}
     visionTree = [[[node]] + [[] for i in range(distance - 1)] for node in startingNode.neighbors]
