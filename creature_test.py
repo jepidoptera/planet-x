@@ -3,7 +3,21 @@ import unittest
 from creatures.genome import *
 
 class testGenome(unittest.TestCase):
-    gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
+    gene = Genome(
+        energy=1, 
+        deadliness=1, 
+        speed=1, 
+        stamina=4, 
+        fortitude=4, 
+        intelligence=33, 
+        longevity=6, 
+        fertility=9, 
+        meateating=3, 
+        planteating=7, 
+        sightrange=5, 
+        sightfield=3,
+        mindStr='345979023qr79fa70450b0734ec3098e90283b'
+    )
     def test(self):
         print (self.gene.stamina)
         self.assertTrue(self.gene.stamina == 3 + 2/3)

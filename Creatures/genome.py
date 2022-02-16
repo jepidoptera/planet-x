@@ -1,66 +1,81 @@
 from json.encoder import INFINITY
 from operator import mod
 from random import random
+import random
 
 # genome
 class Stat():
-    def __init__(self, value: int, max: int=INFINITY, metacost: float=0.0, growcost: float=0.0):
-        self.value = min(value, max)
-        self.max = max
-        self.metacost = metacost
-        self.growcost = growcost
+    max = INFINITY
+    metacost = 0.0
+    growcost = 0.0
+    def __init__(self, value, max:int = 0, metacost:float = 0.0, growcost:float = 0.0):
+        if max: self.max = max
+        if metacost: self.metacost = metacost
+        if growcost: self.growcost = growcost
+        self.value = value
 
     def __add__(self, n):
-        self.value = min(self.value + n, self.max)
-        return self.value
+        self.value = max(min(self.value + n, self.max), 0)
+        return self
     
     def __sub__(self, n):
         self.value = max(self.value - n, 0)
-        return self.value
+        return self
 
 class Fortitude(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=1.0, growcost=1.5)
+    max = 7
+    metacost = 1.0
+    growcost = 1.5
 
 class Deadliness(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=2.0, growcost=1.0)
+    max = 7
+    metacost = 2.0
+    growcost = 1.0
 
 class Speed(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=12, metacost=1.5, growcost=1.0)
+    max = 12
+    metacost = 2.0
+    growcost = 1.0
 
 class Longevity(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=20, metacost=1.0, growcost=1.0)
+    max = 7
+    metacost = 1.0
+    growcost = 1.0
 
 class Intelligence(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=128, metacost=0.5, growcost=0.2)
+    max = 128
+    metacost = 0.5
+    growcost = 0.1
 
 class MeatEating(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=1.0, growcost=0.0)
+    max = 7
+    metacost = 1.0
+    growcost = 0.0
 
 class PlantEating(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=1.0, growcost=0.0)
+    max = 7
+    metacost = 1.0
+    growcost = 0.0
 
 class Fertility(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=1.5, growcost=0)
+    max = 7
+    metacost = 1.5
+    growcost = 0.0
 
 class SightRange(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=1.0, growcost=0.4)
+    max = 7
+    metacost = 1.0
+    growcost = 0.4
 
-class PeripheralVision(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=4, metacost=1.0, growcost=0.4)
+class SightField(Stat):
+    max = 4
+    metacost = 1.0
+    growcost = 0.4
 
 class Stamina(Stat):
-    def __init__(self, value):
-        super().__init__(value=value, max=7, metacost=1.0, growcost=1.0)
+    max = 7
+    metacost = 1.0
+    growcost = 1.0
 
 class Genome():
     mutationRate = 0.5
@@ -79,7 +94,7 @@ class Genome():
             "meat eating": MeatEating(value=meateating), 
             "plant eating": PlantEating(value=planteating), 
             "sight range": SightRange(value=sightrange),
-            "sight field": PeripheralVision(value=sightfield)
+            "sight field": SightField(value=sightfield)
         }
 
         # phenome
@@ -94,6 +109,7 @@ class Genome():
         self.__planteating = self.stats["plant eating"].value
         self.__sightrange = self.stats["sight range"].value
         self.__sightfield = self.stats["sight field"].value
+
         self.__size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
         self.__metabolism = Stat(value=sum([stat.value * stat.metacost for stat in self.stats.values()]))
         
@@ -118,18 +134,17 @@ class Genome():
         return
 
     def mutate(self):
-        if random.random() > self.mutationRate: return 0
+        # if random.random() > self.mutationRate: return 0
 
-        brainMutation = int(random() * 2)
+        brainMutation = int(random.random() * 2)
 
         def modString(string, char, position):
             return string[:position] + char + string[position+1:]
 
         if (brainMutation):
-            self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random() * len(self.mindStr)))
+            self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
         else:
-            self.__stats[int(random.random() * len(self.__stats))] += int(random.random() * 2) * 2 - 1
-        return self
+            self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
     @property 
     def metabolism(self):
@@ -144,15 +159,15 @@ class Genome():
 
     @property
     def fertility(self):
-        return self.__fertility - self.__longevity / 3
+        return self.__fertility ** 2 / (self.__fertility + self.__longevity / 3)
 
     @property
     def meatEating(self):
-        return self.__meateating - self.__planteating / 2
+        return self.__meateating ** 2 / (self.__meateating + self.__planteating / 2)
 
     @property
     def plantEating(self):
-        return self.__planteating - self.__meateating / 2
+        return self.__planteating ** 2 / (self.__meateating / 2 + self.__planteating)
 
     @property
     def sightRange(self):
@@ -172,7 +187,7 @@ class Genome():
 
     @property
     def stamina(self):
-        return self.__stamina - self.speed / 3
+        return self.__stamina ** 2 / (self.__stamina + self.__speed / 3)
 
     @property
     def fortitude(self):
@@ -180,9 +195,48 @@ class Genome():
 
     @property
     def intelligence(self):
-        return self.__intelligence - self.__sightrange * self.__sightfield
+        return int(self.__intelligence ** 2 / (self.__intelligence + self.__sightrange * self.__sightfield))
 
     @property
     def longevity(self):
         return self.__longevity
 
+    def printStats(self):
+        print(*[
+            f'energy: {self.energy}', 
+            f'deadliness: {self.deadliness}', 
+            f'speed: {self.speed}', 
+            f'stamina: {self.stamina}', 
+            f'fortitude: {self.fortitude}', 
+            f'intelligence: {self.intelligence}', 
+            f'longevity: {self.longevity}', 
+            f'fertility: {self.fertility}', 
+            f'sight range: {self.sightRange}', 
+            f'field of view: {self.sightField}', 
+            f'meat eating: {self.meatEating}', 
+            f'plant eating: {self.plantEating}'
+        ], sep='\n')
+
+    def printRawStats(self):
+        print(*[f'{key}: {value.value}' for i, (key, value) in enumerate(self.stats.items())], sep='\n')
+
+
+def randomGenome():
+    return Genome(
+        energy = random.random() * 32, 
+        deadliness = int(random.random() * (Deadliness.max + 1)),
+        speed = int(random.random() * (Speed.max + 1)),
+        stamina = int(random.random() * (Stamina.max + 1)),
+        fortitude = int(random.random() * (Fortitude.max + 1)),
+        intelligence = int(random.random() * (Intelligence.max + 1)),
+        longevity =int(random.random() * (Longevity.max + 1)),
+        fertility = int(random.random() * (Fertility.max + 1)),
+        meateating = int(random.random() * (MeatEating.max + 1)),
+        planteating = int(random.random() * (PlantEating.max + 1)),
+        sightrange = int(random.random() * (SightRange.max + 1)),
+        sightfield = int(random.random() * (SightField.max + 1)),
+        mindStr = "".join(random.choice('abcdef1234567890') for i in range(32))
+    )
+
+c = randomGenome()
+while c.mutate() == 0: pass
