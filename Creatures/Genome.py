@@ -1,19 +1,22 @@
+from json.encoder import INFINITY
 from operator import mod
 from random import random
 
 # genome
 class Stat():
-    def __init__(self, value: int, max: int, metacost: float, growcost: float):
+    def __init__(self, value: int, max: int=INFINITY, metacost: float=0.0, growcost: float=0.0):
         self.value = min(value, max)
         self.max = max
         self.metacost = metacost
         self.growcost = growcost
 
     def __add__(self, n):
-        return min(self + n, self.max)
+        self.value = min(self.value + n, self.max)
+        return self.value
     
     def __sub__(self, n):
-        return max(self - n, 0)
+        self.value = max(self.value - n, 0)
+        return self.value
 
 class Fortitude(Stat):
     def __init__(self, value):
@@ -59,31 +62,42 @@ class Stamina(Stat):
     def __init__(self, value):
         super().__init__(value=value, max=7, metacost=1.0, growcost=1.0)
 
-def modString(string, char, position):
-    return string[:position] + char + string[position+1:]
-
 class Genome():
     mutationRate = 0.5
-    def __init__(self, energy: float, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, peripheralvision: int, axons: str):
+    def __init__(self, energy: float, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str):
 
-        self.__deadliness = Deadliness(value=deadliness)
-        self.__speed = Speed(value=speed)
-        self.__stamina = Stamina(value=stamina)
-        self.__fortitude = Fortitude(value=fortitude)
-        self.__intelligence = Intelligence(value=intelligence)
-        self.__longevity = Longevity(value=longevity)
-        self.__meateating = MeatEating(value=meateating)
-        self.__planteating = PlantEating(value=planteating)
-        self.__fertility = Fertility(value=fertility)
-        self.__sightrange = SightRange(value=sightrange)
-        self.__peripheralvision = PeripheralVision(value=peripheralvision)
+        # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
 
-        self.__stats = [deadliness, speed, fortitude, intelligence, longevity, fertility, meateating, planteating]
+        self.stats = {
+            "deadliness": Deadliness(value=deadliness),
+            "speed": Speed(value=speed), 
+            "stamina": Stamina(value=stamina),
+            "fortitude": Fortitude(value=fortitude), 
+            "intelligence": Intelligence(value=intelligence), 
+            "longevity": Longevity(value=longevity), 
+            "fertility": Fertility(value=fertility), 
+            "meat eating": MeatEating(value=meateating), 
+            "plant eating": PlantEating(value=planteating), 
+            "sight range": SightRange(value=sightrange),
+            "sight field": PeripheralVision(value=sightfield)
+        }
 
-        self.__size = sum([stat.value for stat in self.__stats])
-        self.__metabolism = sum(self.__stats.values().map(lambda stat: stat.value * stat.metacost))
+        # phenome
+        self.__deadliness = self.stats["deadliness"].value
+        self.__speed = self.stats["speed"].value
+        self.__stamina = self.stats["stamina"].value
+        self.__fortitude = self.stats["fortitude"].value
+        self.__intelligence = self.stats["intelligence"].value
+        self.__longevity = self.stats["longevity"].value
+        self.__fertility = self.stats["fertility"].value
+        self.__meateating = self.stats["meat eating"].value
+        self.__planteating = self.stats["plant eating"].value
+        self.__sightrange = self.stats["sight range"].value
+        self.__sightfield = self.stats["sight field"].value
+        self.__size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
+        self.__metabolism = Stat(value=sum([stat.value * stat.metacost for stat in self.stats.values()]))
         
-        self.axons = axons
+        self.mindStr = mindStr
         
         self.sprintMoves = 0
         self.energy = energy
@@ -108,8 +122,11 @@ class Genome():
 
         brainMutation = int(random() * 2)
 
+        def modString(string, char, position):
+            return string[:position] + char + string[position+1:]
+
         if (brainMutation):
-            self.axons = modString(self.axons, random.choice('1234567890abcdef'), int(random() * len(self.axons)))
+            self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random() * len(self.mindStr)))
         else:
             self.__stats[int(random.random() * len(self.__stats))] += int(random.random() * 2) * 2 - 1
         return self
@@ -117,7 +134,7 @@ class Genome():
     @property 
     def metabolism(self):
         # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-        return self.__metabolism + self.sprintMoves / self.stamina
+        return self.__metabolism + self.sprintMoves / self.stamina.value
 
     @property
     def size(self):
@@ -142,8 +159,8 @@ class Genome():
         return self.__sightrange
 
     @property
-    def peripheralVision(self):
-        return self.__peripheralvision
+    def sightField(self):
+        return self.__sightfield
 
     @property
     def deadliness(self):
@@ -163,7 +180,7 @@ class Genome():
 
     @property
     def intelligence(self):
-        return self.__intelligence - self.__sightrange * self.__peripheralvision
+        return self.__intelligence - self.__sightrange * self.__sightfield
 
     @property
     def longevity(self):
