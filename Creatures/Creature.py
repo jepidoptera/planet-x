@@ -14,11 +14,12 @@ class NeuronType(Enum):
     action = 5
     
 class Neuron():
-    def __init__(self, type: NeuronType ):
+    def __init__(self, type: NeuronType, sense: function = None, action: function = None, state = True):
         self.activation = 0.0
-        self.sense = None
-        self.action = None
+        self.sense = sense
+        self.action = action
         self.type = type
+        self.memState = state
 
 class Axon():
     def __init__(self, input: Neuron, output: Neuron, factor: float):
@@ -32,7 +33,32 @@ class Brain():
         self.neurons = neurons
 
 class Creature():    
-    def __init__(self, world:Map, location:MapNode, genome:Genome):
+
+    creatureNeurons = [
+        Neuron(NeuronType.creature, sense=lambda self, other: other.deadliness - self.deadliness),
+        Neuron(NeuronType.creature, sense=lambda _, other: other.age / other.longevity),
+        Neuron(NeuronType.creature, sense=lambda _, other: other.health),
+        Neuron(NeuronType.creature, sense=lambda self, other: other.similarity(self)),
+        Neuron(NeuronType.creature, sense=lambda self, other: other.speed - self.speed),
+        Neuron(NeuronType.creature, sense=lambda _, other: other.size)
+    ]
+    selfNeurons = [
+        Neuron(NeuronType.self) * 5
+    ]
+    envNeurons = [
+        Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.meat),
+        Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.fruit),
+        Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.grass),
+        Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.tree)
+    ]
+    hiddenNeurons = [
+        Neuron(NeuronType.hidden) * 12
+    ]
+    actionNeurons = [
+        Neuron(NeuronType.action)
+    ]
+
+    def __init__(self, world:Map, location:MapNode, genome:Genome, energy: float):
         self.world = world
         
         self.genome = genome
@@ -48,6 +74,7 @@ class Creature():
 
         self.age = 0
         self.health = self.fortitude
+        self.energy = energy
 
         self.location = location
         self.direction = int(random.random() * len(self.location.neighbors))
@@ -57,35 +84,20 @@ class Creature():
         # *health
         # *stamina
 
-        self.creatureNeurons = [
-            Neuron(NeuronType.creature) * 10
-        ]
-        self.selfNeurons = [
-            Neuron(NeuronType.self) * 5
-        ]
-        self.envNeurons = [
-            Neuron(NeuronType.environment) * 6
-        ]
         self.memNeurons = [
-            Neuron(NeuronType.memory) * 8
-        ]
-        self.hiddenNeurons = [
-            Neuron(NeuronType.hidden) * 12
-        ]
-        self.actionNeurons = [
-            Neuron(NeuronType.action)
+            Neuron(NeuronType.memory, state = False) * 8
         ]
         self.brain = Brain(
             neurons=[
                 *self.creatureNeurons,
                 *self.selfNeurons,
                 *self.envNeurons,
-                *self.memNeurons,
                 *self.hiddenNeurons,
-                *self.actionNeurons
+                *self.actionNeurons,
+                *self.memNeurons
             ],
             axons=[
-
+                genome.mindStr
             ]
         )
         return 
@@ -95,18 +107,27 @@ class Creature():
 
         for layer, distance in enumerate(vision):
             for node in layer:
-                self.processMapNode(node)
+                self.processMapNode(node, distance)
 
-    def processMapNode(self, node: MapNode):
+    def processMapNode(self, node: MapNode, distance: int):
         for neuron in self.brain.neurons:
-            neuron.activation = 0.0
+            if neuron.type != NeuronType.memory:
+                neuron.activation = 0.0
 
-        if type(node.occupant) == Creature:
+        if (node.occupant):
             other = node.occupant
 
-            for axon in self.brain.axons:
-                if axon.input.type == NeuronType.creature:
-                    axon.output.activation += axon.input.activation * axon.factor
+            for sensor in self.creatureNeurons:
+                sensor.sense(self, other)
+                # oh that's quite beautiful 👍
+
+        if (node.resource):
+            for sensor in self.envNeurons:
+                sensor.sense(node.resource)
+
+        for axon in self.brain.axons:
+            if axon.input.type == NeuronType.creature:
+                axon.output.activation += axon.input.activation * axon.factor
 
 
     def getVisionRanges(self):
@@ -125,3 +146,10 @@ class Creature():
 
     def unpackBrainGenome(self):
         return []
+
+    def getSimilarity(self, other):
+        similarity = 0.0
+        commonRange = range(min(len(self.mindStr), len(other.mindStr)))
+        for c in range(min(len(self.mindStr), len(other.mindStr))):
+            similarity
+        return 1.0
