@@ -1,6 +1,7 @@
-from pstats import Stats
 import unittest
 from creatures.genome import *
+from creatures.creature import *
+from world.map import *
 
 class testGenome(unittest.TestCase):
     gene = Genome(
