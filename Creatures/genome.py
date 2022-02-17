@@ -5,24 +5,27 @@ import random
 
 # genome
 class Stat():
+    min = 0
     max = INFINITY
     metacost = 0.0
     growcost = 0.0
-    def __init__(self, value, max:int = 0, metacost:float = 0.0, growcost:float = 0.0):
+    def __init__(self, value, min:int = 0, max:int = 0, metacost:float = 0.0, growcost:float = 0.0):
         if max: self.max = max
+        if min: self.min = min
         if metacost: self.metacost = metacost
         if growcost: self.growcost = growcost
         self.value = value
 
     def __add__(self, n):
-        self.value = max(min(self.value + n, self.max), 0)
+        self.value = max(min(self.value + n, self.max), self.min)
         return self
     
     def __sub__(self, n):
-        self.value = max(self.value - n, 0)
+        self.value = min(max(self.value - n, self.min), self.max)
         return self
 
 class Fortitude(Stat):
+    min = 1
     max = 7
     metacost = 1.0
     growcost = 1.5
@@ -38,11 +41,13 @@ class Speed(Stat):
     growcost = 1.0
 
 class Longevity(Stat):
-    max = 7
+    min = 1
+    max = 20
     metacost = 1.0
     growcost = 1.0
 
 class Intelligence(Stat):
+    min = 10
     max = 128
     metacost = 0.5
     growcost = 0.1
@@ -68,11 +73,13 @@ class SightRange(Stat):
     growcost = 0.4
 
 class SightField(Stat):
+    min = 1
     max = 4
     metacost = 1.0
     growcost = 0.4
 
 class Stamina(Stat):
+    min = 1
     max = 7
     metacost = 1.0
     growcost = 1.0
@@ -149,7 +156,7 @@ class Genome():
     @property 
     def metabolism(self):
         # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-        return self.__metabolism + self.sprintMoves / self.stamina.value
+        return self.__metabolism + self.sprintMoves / self.stamina
 
     @property
     def size(self):
@@ -163,11 +170,11 @@ class Genome():
 
     @property
     def meatEating(self):
-        return self.__meateating ** 2 / (self.__meateating + self.__planteating / 2)
+        return (self.__meateating + 1) ** 2 / (1 + self.__meateating + self.__planteating / 2) - 1
 
     @property
     def plantEating(self):
-        return self.__planteating ** 2 / (self.__meateating / 2 + self.__planteating)
+        return (self.__planteating + 1) ** 2 / (1 + self.__meateating / 2 + self.__planteating) - 1
 
     @property
     def sightRange(self):
@@ -187,7 +194,7 @@ class Genome():
 
     @property
     def stamina(self):
-        return self.__stamina ** 2 / (self.__stamina + self.__speed / 3)
+        return self.__stamina ** 2 / (self.__stamina + self.__speed / 3 + 1)
 
     @property
     def fortitude(self):
@@ -226,15 +233,15 @@ def randomGenome():
         energy = random.random() * 32, 
         deadliness = int(random.random() * (Deadliness.max + 1)),
         speed = int(random.random() * (Speed.max + 1)),
-        stamina = int(random.random() * (Stamina.max + 1)),
-        fortitude = int(random.random() * (Fortitude.max + 1)),
-        intelligence = int(random.random() * (Intelligence.max + 1)),
-        longevity =int(random.random() * (Longevity.max + 1)),
+        stamina = int(random.random() * (Stamina.max) + 1),
+        fortitude = int(random.random() * (Fortitude.max) + 1),
+        intelligence = int(random.random() * (Intelligence.max - Intelligence.min + 1) + Intelligence.min),
+        longevity =int(random.random() * (Longevity.max) + 1),
         fertility = int(random.random() * (Fertility.max + 1)),
         meateating = int(random.random() * (MeatEating.max + 1)),
         planteating = int(random.random() * (PlantEating.max + 1)),
         sightrange = int(random.random() * (SightRange.max + 1)),
-        sightfield = int(random.random() * (SightField.max + 1)),
+        sightfield = int(random.random() * (SightField.max) + 1),
         mindStr = "".join(random.choice('abcdef1234567890') for i in range(32))
     )
 
