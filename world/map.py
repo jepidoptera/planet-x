@@ -1,6 +1,5 @@
 from enum import Enum
 from math import *
-from creatures.creature import Creature
 sign = lambda x: copysign(1, x)
 
 class ResourceType(Enum):
@@ -17,7 +16,7 @@ class MapNode():
     def __init__(self, index: int, neighbors: list):
         self.index = index
         self.neighbors = neighbors
-        self.occupant: Creature
+        self.occupant: any
         self.resource: Resource
         self.visionTree = []
 
@@ -75,7 +74,7 @@ class Map():
         # print ("node {0} neighbors: {1}".format(int(self.totalNodes / 2), [n.index for n in self.nodes[int(self.totalNodes / 2)].neighbors]))
 
         for node in self.nodes:
-            node.visionTree = calcVisionTree(node, 10)
+            node.visionTree = calcVisionTree(node, 7)
     
     def print(self):
         for y in range(self.mapHeight):
