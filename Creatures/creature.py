@@ -1,9 +1,10 @@
 # good start
 # you made a file
 from enum import Enum
-from random import random
-from genome import Genome
+import random
+from creatures.genome import Genome
 from world.map import *
+import typing
 
 class NeuronType(Enum):
     creature = 0
@@ -14,12 +15,12 @@ class NeuronType(Enum):
     action = 5
     
 class Neuron():
-    def __init__(self, type: NeuronType, sense: function = None, action: function = None, state = True):
+    def __init__(self, type: NeuronType, sense: typing.Callable = None, action: typing.Callable = None, memState = True):
         self.activation = 0.0
         self.sense = sense
         self.action = action
         self.type = type
-        self.memState = state
+        self.memState = memState
 
 class Axon():
     def __init__(self, input: Neuron, output: Neuron, factor: float):
@@ -42,21 +43,17 @@ class Creature():
         Neuron(NeuronType.creature, sense=lambda self, other: other.speed - self.speed),
         Neuron(NeuronType.creature, sense=lambda _, other: other.size)
     ]
-    selfNeurons = [
-        Neuron(NeuronType.self) * 5
-    ]
+    selfNeurons = [Neuron(NeuronType.self)] * 5
+    
     envNeurons = [
         Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.meat),
         Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.fruit),
         Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.grass),
         Neuron(NeuronType.environment, sense=lambda resource: resource.type==ResourceType.tree)
     ]
-    hiddenNeurons = [
-        Neuron(NeuronType.hidden) * 12
-    ]
-    actionNeurons = [
-        Neuron(NeuronType.action)
-    ]
+    hiddenNeurons = [Neuron(NeuronType.hidden)] * 12
+
+    actionNeurons = [Neuron(NeuronType.action)] * 7
 
     def __init__(self, world:Map, location:MapNode, genome:Genome, energy: float):
         self.world = world
@@ -70,7 +67,7 @@ class Creature():
         self.plantEating = genome.plantEating
         self.intelligence = genome.intelligence
         self.sightRange = genome.sightRange
-        self.peripheralVision = genome.peripheralVision
+        self.sightField = genome.sightField
 
         self.age = 0
         self.health = self.fortitude
@@ -84,9 +81,8 @@ class Creature():
         # *health
         # *stamina
 
-        self.memNeurons = [
-            Neuron(NeuronType.memory, state = False) * 8
-        ]
+        self.memNeurons = [Neuron(NeuronType.memory, memState = False)] * 8
+
         self.brain = Brain(
             neurons=[
                 *self.creatureNeurons,
@@ -134,7 +130,7 @@ class Creature():
         cones = [
             self.nodes[self.location].visionTree[(self.direction + n) % len(self.location.neighbors)][:self.sightRange] 
             for n in [-int(n / 2) if n % 2 == 0 else int(n / 2) + 1 
-            for n in range((self.peripheralVision - 1) * 2 + 1)] 
+            for n in range((self.sightField - 1) * 2 + 1)] 
         ]
         visionLayers = [
             # get a separate array of nodes for each distance from self.location
@@ -149,7 +145,8 @@ class Creature():
 
     def getSimilarity(self, other):
         similarity = 0.0
-        commonRange = range(min(len(self.mindStr), len(other.mindStr)))
-        for c in range(min(len(self.mindStr), len(other.mindStr))):
-            similarity
-        return 1.0
+        commonRange = range(min(len(self.genome.mindStr), len(other.genome.mindStr)))
+        increment = 1/len(commonRange)
+        for c in commonRange:
+            if self.genome.mindStr[c] == other.genome.mindStr[c]: similarity += increment
+        return similarity
