@@ -170,11 +170,11 @@ class Genome():
 
     @property
     def meatEating(self):
-        return (self.__meateating + 1) ** 2 / (1 + self.__meateating + self.__planteating / 2) - 1
+        return (self.__meateating + 1) ** 2 / (1 + self.__meateating + self.__planteating / 2)
 
     @property
     def plantEating(self):
-        return (self.__planteating + 1) ** 2 / (1 + self.__meateating / 2 + self.__planteating) - 1
+        return (self.__planteating + 1) ** 2 / (1 + self.__meateating / 2 + self.__planteating)
 
     @property
     def sightRange(self):
