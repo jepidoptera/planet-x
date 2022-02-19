@@ -43,4 +43,10 @@ class testGenome(unittest.TestCase):
             f'plant eating: {self.gene.plantEating}'
         ], sep='\n')
 
+class testCreature(unittest.TestCase):
+    def test(self):
+        map = Map(36, 24)
+        creatures = [Creature(map, random.choice(map.nodes), randomGenome, 100) for n in range(10)]
+        creatures[0].animate()
+
 testGenome().test()
