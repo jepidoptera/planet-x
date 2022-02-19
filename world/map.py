@@ -13,7 +13,7 @@ class Resource():
     value: int
 
 class MapNode():
-    def __init__(self, index: int, neighbors: list):
+    def __init__(self, index: int, neighbors: list, x: float=0.0, y: float=0.0, z: float=0.0):
         self.index = index
         self.neighbors = neighbors
         self.occupant: any
@@ -38,7 +38,6 @@ def calcVisionTree(startingNode: MapNode, distance: int):
                             # print (nextNode.index, t, j)
                             nodesThisTree += 1
                     if nodesThisTree > i + 1:
-                        # todo: prune the right one
                         break
         # print (["{0}, {1}".format(key.index, visionLayer[key]) for key in visionLayer.keys()])
         for node in visionLayer.keys():
@@ -63,15 +62,16 @@ class Map():
         for i, node in enumerate(self.nodes):
             neighborIndexes = []
             if int(i / mapHeight) % 2 == 1:
+                # odd row
                 neighborIndexes = [-1, mapHeight, mapHeight + 1, 1, -mapHeight + 1, -mapHeight]
             else:
+                # even row
                 neighborIndexes = [-1, mapHeight - 1, mapHeight, 1, -mapHeight, -mapHeight - 1]
+            node.x = int(i / mapHeight)
+            node.y = i % mapHeight * .866 + (i/mapHeight % 2) / 2
+            node.z = 0
             for _, n in enumerate(neighborIndexes):
                 node.neighbors.append(self.nodes[(i + n) % self.totalNodes])
-
-            # rotate the list
-            # node.neighbors = node.neighbors[i * 11 % 6:] + node.neighbors[:i * 11 % 6]
-        # print ("node {0} neighbors: {1}".format(int(self.totalNodes / 2), [n.index for n in self.nodes[int(self.totalNodes / 2)].neighbors]))
 
         for node in self.nodes:
             node.visionTree = calcVisionTree(node, 7)
