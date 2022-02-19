@@ -21,7 +21,7 @@ class testGenome(unittest.TestCase):
     )
     def test(self):
         print (self.gene.stamina)
-        self.assertTrue(self.gene.stamina == 3 + 2/3)
+        self.assertTrue(self.gene.stamina == 3)
         print ('raw')
         print ()
         print(*[f'{key}: {value.value}' for i, (key, value) in enumerate(self.gene.stats.items())], sep='\n')
@@ -46,7 +46,9 @@ class testGenome(unittest.TestCase):
 class testCreature(unittest.TestCase):
     def test(self):
         map = Map(36, 24)
-        creatures = [Creature(map, random.choice(map.nodes), randomGenome, 100) for n in range(10)]
-        creatures[0].animate()
+        creatures = [Creature(map, random.choice(map.nodes), randomGenome(), 100) for n in range(10)]
+        for creature in creatures:
+            creature.animate()
 
 testGenome().test()
+testCreature().test()
