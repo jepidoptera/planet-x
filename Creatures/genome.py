@@ -118,7 +118,6 @@ class Genome():
         self.__sightfield = self.stats["sight field"].value
 
         self.__size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
-        self.__metabolism = Stat(value=sum([stat.value * stat.metacost for stat in self.stats.values()]))
         
         self.mindStr = mindStr
         
@@ -152,11 +151,6 @@ class Genome():
             self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
         else:
             self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
-
-    @property 
-    def metabolism(self):
-        # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-        return self.__metabolism + self.sprintMoves / self.stamina
 
     @property
     def size(self):
@@ -242,7 +236,7 @@ def randomGenome():
         planteating = int(random.random() * (PlantEating.max + 1)),
         sightrange = int(random.random() * (SightRange.max + 1)),
         sightfield = int(random.random() * (SightField.max) + 1),
-        mindStr = "".join(random.choice('abcdef1234567890') for i in range(32))
+        mindStr = "".join(random.choice('abcdef1234567890') for i in range(1028))
     )
 
 c = randomGenome()
