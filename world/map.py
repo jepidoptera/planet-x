@@ -16,8 +16,8 @@ class MapNode():
     def __init__(self, index: int, neighbors: list, x: float=0.0, y: float=0.0, z: float=0.0):
         self.index = index
         self.neighbors = neighbors
-        self.occupant: any
-        self.resource: Resource
+        self.occupant: any = None
+        self.resource: Resource = None
         self.visionTree = []
 
 def calcVisionTree(startingNode: MapNode, distance: int):
