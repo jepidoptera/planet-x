@@ -11,6 +11,9 @@ class ResourceType(Enum):
 class Resource():
     type: ResourceType
     value: int
+    def __init__(self, type: ResourceType, value: int):
+        self.type = type
+        self.value = value
 
 class MapNode():
     def __init__(self, index: int, neighbors: list, x: float=0.0, y: float=0.0, z: float=0.0):
@@ -18,6 +21,7 @@ class MapNode():
         self.neighbors = neighbors
         self.occupant: any = None
         self.resource: Resource = None
+        self.obstruction: any = None
         self.visionTree = []
 
 def calcVisionTree(startingNode: MapNode, distance: int):
@@ -68,7 +72,7 @@ class Map():
                 # even row
                 neighborIndexes = [-1, mapHeight - 1, mapHeight, 1, -mapHeight, -mapHeight - 1]
             node.x = int(i / mapHeight)
-            node.y = i % mapHeight * .866 + (i/mapHeight % 2) / 2
+            node.y = i % mapHeight + (i/mapHeight % 2) / 2
             node.z = 0
             for _, n in enumerate(neighborIndexes):
                 node.neighbors.append(self.nodes[(i + n) % self.totalNodes])
@@ -106,6 +110,50 @@ class Map():
             print(''.join(["{0}    ".format(showVision(y + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
             print(''.join(["  {0}  ".format(showVision(y + self.mapHeight + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
 
+    def findPath(startNode: MapNode, endNode: MapNode) -> list[MapNode]:
+        # good ol' A* algorithm
+        class nodeOption():
+            def __init__(self, node: MapNode, previous: MapNode=None, pathLength: int=0, distanceTraveled: int=0):
+                self.node = node
+                self.previous=previous
+                self.f = pathLength # estimated total path length
+                self.g = distanceTraveled # distance traveled so far
 
+        openList = [nodeOption(startNode, 0)]
+        closedList = []
+        while openList:
+            currentNode = min(openList, key=lambda node: node.f)
+            openList.remove(currentNode)
+            closedList.append(currentNode.node)
+
+            if currentNode.node == endNode:
+                path = []
+                while True:
+                    path = [currentNode.node] + path
+                    if currentNode.node == startNode: break
+                    currentNode = currentNode.previous
+                return path
+
+            for neighbor in currentNode.node.neighbors:
+                if neighbor in closedList or neighbor.obstruction:
+                    continue
+                remainingDistance = Map.getDistance(neighbor, endNode)
+                distanceTraveled = currentNode.g + 1
+                pathLength = distanceTraveled + remainingDistance
+                for i, option in enumerate(openList):
+                    if option.node == neighbor:
+                        if option.g > distanceTraveled:
+                            openList[i] = nodeOption(neighbor, currentNode, pathLength, distanceTraveled)
+                        break
+                openList.append(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
+
+    def getDistance(a: MapNode, b: MapNode):
+        x0 = a.x-floor(a.y/2)
+        y0 = a.y
+        x1 = b.x-floor(b.y/2)
+        y1 = b.y
+        dx = x1 - x0
+        dy = y1 - y0
+        return max(abs(dx), abs(dy), abs(dx+dy))            
 # map = Map(16, 10)
 # calcVisionTree(map.nodes[45], 3)
