@@ -1,9 +1,8 @@
 # good start
-# you made a file
-from argparse import Action
+# you made a file!
+# 288 lines long now. got about ten other files as well
 from enum import Enum
 import random
-from creatures.genome import randomGenome
 from creatures.genome import Genome
 from world.map import *
 import typing
@@ -15,6 +14,8 @@ class NeuronType(Enum):
     memory = 3
     relay = 4
     action = 5
+
+netIndex={}
     
 class Neuron():
     activation:float
@@ -22,18 +23,33 @@ class Neuron():
     action:typing.Callable
     type:NeuronType
     name:str
-    memState:bool
-    connects:list
-    def __init__(self, type: NeuronType, name:str='', sense: typing.Callable=None, action: typing.Callable=None, memState=True):
+    def __init__(self, type: NeuronType, name:str='', sense: typing.Callable=None, action: typing.Callable=None):
         self.activation = 0.0
         self.__sense = sense
         self.action = action
         self.type = type
-        self.memState = memState
+        netIndex[name]=self
     def sense(self, *args):
-        self.activation = self.__sense(*args)
-
+        self.activate(self.__sense(*args))
+    def activate(self, amount):
+        self.activation = amount
+    def clear(self):
+        self.activation = 0
 # 🙌🏾
+
+class MemNeuron(Neuron):
+    sense=None
+    action=None
+    type=NeuronType.memory
+
+    def __init__(self, memstate:bool=True, threshold:float=1.0, strength:float=1.0, name:str=''):
+        super().__init__(NeuronType.memory, name=name)
+        self.memState = memstate
+        self.strength = strength
+    def activate(self, amount):
+        if abs(amount) > self.threshold: self.memState = (sign(amount)+1) / 2
+    def clear(self):
+        self.activation = self.memState * self.strength
 
 class Axon():
     def __init__(self, input: Neuron, output: Neuron, factor: float):
@@ -42,46 +58,46 @@ class Axon():
         self.factor = factor
 
 class ActionOption():
-    def __init__(self, action: typing.Callable, target: any, weight: float):
+    def __init__(self, action: typing.Callable, target: any, weight: float, relevantNeuron: Neuron):
         self.action = action
         self.target = target
-        self.weight = weight        
+        self.weight = weight
+        self.neuron = relevantNeuron
 
 # class Brain():
 
 class Creature():    
-    health: float
     attackTarget: any
     fleeTarget: any
     mateTarget: any
     moveTarget: MapNode
-    sprintMoves: int
-    energy: float
+    path: list[MapNode]
 
     creatureNeurons = [ # 00 - 05
-        Neuron(NeuronType.creature, sense=lambda self, other: other.deadliness - self.deadliness),
-        Neuron(NeuronType.creature, sense=lambda self, other: other.age / other.longevity),
-        Neuron(NeuronType.creature, sense=lambda self, other: other.health),
-        Neuron(NeuronType.creature, sense=lambda self, other: self.getSimilarity(other)),
-        Neuron(NeuronType.creature, sense=lambda self, other: other.speed - self.speed),
-        Neuron(NeuronType.creature, sense=lambda self, other: other.size)
+        Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: other.deadliness - self.deadliness),
+        Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age / other.longevity),
+        Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health),
+        Neuron(NeuronType.creature, name='creature_similarity', sense=lambda self, other: self.getSimilarity(other)),
+        Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: other.speed - self.speed),
+        Neuron(NeuronType.creature, name='creature_size', sense=lambda self, other: other.size)
     ]
 
     selfNeurons = [ # 06 - 09
-        Neuron(NeuronType.self, sense=lambda self: self.energy),
-        Neuron(NeuronType.self, sense=lambda self: self.health),
-        Neuron(NeuronType.self, sense=lambda self: self.age),
-        Neuron(NeuronType.self, sense=lambda self: self.sprintMoves),
+        Neuron(NeuronType.self, name='energy', sense=lambda self: self.energy),
+        Neuron(NeuronType.self, name='health', sense=lambda self: self.health),
+        Neuron(NeuronType.self, name='age', sense=lambda self: self.age),
+        Neuron(NeuronType.self, name='birth', sense=lambda self: 0), # just born
+        Neuron(NeuronType.self, name='injury', sense=lambda self: 0), # under attack 
     ]
     
     envNeurons = [ # 0a - 0d
-        Neuron(NeuronType.environment, sense=lambda resource: 1 if resource.type==ResourceType.meat else 0),
-        Neuron(NeuronType.environment, sense=lambda resource: 1 if resource.type==ResourceType.fruit else 0),
-        Neuron(NeuronType.environment, sense=lambda resource: 1 if resource.type==ResourceType.grass else 0),
-        Neuron(NeuronType.environment, sense=lambda resource: 1 if resource.type==ResourceType.tree else 0)
+        Neuron(NeuronType.environment, name='meat', sense=lambda resource: 1 if resource.type==ResourceType.meat else 0),
+        Neuron(NeuronType.environment, name='fruit', sense=lambda resource: 1 if resource.type==ResourceType.fruit else 0),
+        Neuron(NeuronType.environment, name='grass', sense=lambda resource: 1 if resource.type==ResourceType.grass else 0),
+        Neuron(NeuronType.environment, name='tree', sense=lambda resource: 1 if resource.type==ResourceType.tree else 0)
     ]
 
-    relayNeurons = [Neuron(NeuronType.relay) for n in range(16)]
+    relayNeurons = [Neuron(NeuronType.relay, name=f'relay{n}') for n in range(8)]
 
     actionNeurons = [
         Neuron(NeuronType.action, action=lambda self, other: self.attack(other)),
@@ -128,7 +144,7 @@ class Creature():
         # *health
         # *stamina
 
-        self.memNeurons = [Neuron(NeuronType.memory, memState = False) for n in range(16)]
+        self.memNeurons = [MemNeuron(False, strength=n, name=f'memory{n}') for n in range(8)]
         self.allNeurons = self.creatureNeurons + self.envNeurons + self.selfNeurons + self.memNeurons + self.relayNeurons + self.actionNeurons
         self.unpackGenome(self.mindStr)
 
@@ -171,6 +187,11 @@ class Creature():
             action.action(self, action.target)
         else:
             action.action()
+        # propagate this action into the net, potentially setting memory neurons or smth
+        for neuron in self.actionNeurons: neuron.clear()
+        action.neuron.activate(1)
+        for axon in self.actionAxons:
+            axon.output.activate(axon.input.activation * axon.factor)
 
     def attack(self, other):
         self.attackTarget = other
@@ -188,11 +209,11 @@ class Creature():
         self.sprintMoves -= 1
 
     @property 
-    def metabolism(self):
+    def metabolism(self) -> float:
         # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
         return self.__metabolism + self.sprintMoves / self.stamina
 
-    def getVisionRanges(self):
+    def getVisionRanges(self) -> list[list[MapNode]]:
         cones = [
             self.location.visionTree[(self.direction + n) % len(self.location.neighbors)][:self.sightRange] 
             for n in [-int(n / 2) if n % 2 == 0 else int(n / 2) + 1 
@@ -206,7 +227,7 @@ class Creature():
         ]
         return visionLayers
 
-    def getSimilarity(self, other):
+    def getSimilarity(self, other) -> float:
         similarity = 0.0
         commonRange = range(min(len(self.genome.mindStr), len(other.genome.mindStr)))
         increment = 1/len(commonRange)
@@ -215,10 +236,10 @@ class Creature():
         return similarity
 
     def clearInputs(self):
-        for neuron in self.envNeurons + self.creatureNeurons + self.relayNeurons + self.actionNeurons:
-            neuron.activation = 0.0
+        for neuron in self.allNeurons:
+            neuron.clear()
 
-    def processEnvironment(self, vision:list[list[MapNode]]):
+    def processEnvironment(self, vision:list[list[MapNode]]) -> list[ActionOption]:
         actionOptions: list[ActionOption] = []
 
         for sensor in self.selfNeurons:
@@ -247,11 +268,11 @@ class Creature():
                 # oh that's quite beautiful 👍
 
         # the order is important here vvv
-        for axon in self.senseAxons + self.memoryAxons + self.relayAxons + self.actionAxons:
+        for axon in self.senseAxons + self.memoryAxons + self.relayAxons:
             axon.output.activation += axon.input.activation * axon.factor
 
         out = max(*[self.actionNeurons], key=lambda n: n.activation)
-        return ActionOption(out.action, target, out.activation * 1/distance)
+        return ActionOption(out.action, target, out.activation * 1/distance, out)
 
     def printStats(self):
         print('deadliness: ', self.deadliness)
