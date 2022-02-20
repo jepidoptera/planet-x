@@ -13,7 +13,9 @@ class testMap(unittest.TestCase):
         map.nodes[85].obstruction = 'something'
         map.nodes[86].obstruction = 'something'
         map.nodes[87].obstruction = 'something'
-        print ([node.index for node in Map.findPath(map.nodes[63], map.nodes[103])])
+        path = Map.findPath(map.nodes[63], map.nodes[103])
+        print ([node.index for node in path])
+        self.assertTrue(len(path) == 9)
 
 testMap().test()
 
@@ -98,22 +100,23 @@ testMap().test()
 # |||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||█████|||||||||███
 # |||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████████|||||█████
 
-shades = ['|','█',' ']
-shadeIndex = 0
-rows2Print = 12
-rowLength = 120
-printOut = []
-for line in range(rows2Print):
-    shadeIndex += 1
-    shade1=shades[(shadeIndex + 1) % 3]
-    shade2=shades[shadeIndex % 3]
-    printOut.append (''.join([shade1*5 + shade2*9 for n in range(int(rowLength / 12) + 1)]) + shade1*5 + shade2*5)
-    printOut.append (shade1*7 + ''.join([shade2*5 + shade1*9 for n in range(int(rowLength / 12) + 1)]) + shade2*3)
-    shadeIndex += 1
-    shade1=shades[shadeIndex % 3]
-    shade2=shades[(shadeIndex + 1) % 3]
-    printOut.append (shade1*7 + ''.join([shade2*5 + shade1*9 for n in range(int(rowLength / 12) + 1)]) + shade2*3)
-    printOut.append (''.join([shade1*5 + shade2*9 for n in range(int(rowLength / 12) + 1)]) + shade1*5 + shade2*5)
-print(*printOut, sep='\n')
+def printMapGraphic():
+    shades = ['|','█',' ']
+    shadeIndex = 0
+    rows2Print = 12
+    rowLength = 120
+    printOut = []
+    for line in range(rows2Print):
+        shadeIndex += 1
+        shade1=shades[(shadeIndex + 1) % 3]
+        shade2=shades[shadeIndex % 3]
+        printOut.append (''.join([shade1*5 + shade2*9 for n in range(int(rowLength / 12) + 1)]) + shade1*5 + shade2*5)
+        printOut.append (shade1*7 + ''.join([shade2*5 + shade1*9 for n in range(int(rowLength / 12) + 1)]) + shade2*3)
+        shadeIndex += 1
+        shade1=shades[shadeIndex % 3]
+        shade2=shades[(shadeIndex + 1) % 3]
+        printOut.append (shade1*7 + ''.join([shade2*5 + shade1*9 for n in range(int(rowLength / 12) + 1)]) + shade2*3)
+        printOut.append (''.join([shade1*5 + shade2*9 for n in range(int(rowLength / 12) + 1)]) + shade1*5 + shade2*5)
+    print(*printOut, sep='\n')
 
 
