@@ -28,6 +28,7 @@ class Neuron():
         self.__sense = sense
         self.action = action
         self.type = type
+        self.name = name
         netIndex[name]=self
     def sense(self, *args):
         self.activate(self.__sense(*args))
@@ -61,7 +62,7 @@ class Axon():
         return (
             hex(Creature.allNeurons.index(self.input))[2:].zfill(2) + 
             hex(Creature.allNeurons.index(self.output))[2:].zfill(2) +
-            hex(int(self.factor * 0x8000) + 0x7fff)[2:].zfill(4)
+            hex(min(int((self.factor + 1)*0x8000), 0xffff))[2:].zfill(4)
         )
 
 class ActionOption():
@@ -114,7 +115,7 @@ class Creature():
         Neuron(NeuronType.action, name='action_eat', action=lambda self, resource: self.eat(resource)),
         Neuron(NeuronType.action, name='action_turn', action=lambda self, direction: self.turn(direction)),
         Neuron(NeuronType.action, name='action_move', action=lambda self, _: self.move()),
-        Neuron(NeuronType.action, name='action_move', action=lambda self, _: self.rest()) 
+        Neuron(NeuronType.action, name='action_rest', action=lambda self, _: self.rest()) 
     ]
 
     memNeurons:list[Neuron] = [MemNeuron(False, name=f'memory_{n}') for n in range(8)]
