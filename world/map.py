@@ -154,6 +154,13 @@ class Map():
         y1 = b.y
         dx = x1 - x0
         dy = y1 - y0
-        return max(abs(dx), abs(dy), abs(dx+dy))            
+        return max(abs(dx), abs(dy), abs(dx+dy))     
+
+    def clear(self):
+        for node in self.nodes:
+            node.obstruction = None
+            node.occupant = None
+            node.resource = None
+
 # map = Map(16, 10)
 # calcVisionTree(map.nodes[45], 3)
