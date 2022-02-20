@@ -58,12 +58,19 @@ class Axon():
         self.input = input
         self.output = output
         self.factor = factor
+
     def __str__(self):
         return (
             hex(Creature.allNeurons.index(self.input))[2:].zfill(2) + 
             hex(Creature.allNeurons.index(self.output))[2:].zfill(2) +
             hex(min(int((self.factor + 1)*0x8000), 0xffff))[2:].zfill(4)
         )
+
+    def fromHex(hexcode):
+        input = int(hexcode[:2], 16) % len(Creature.allNeurons)
+        output = int(hexcode[2:4], 16) % len(Creature.allNeurons)
+        factor = int(hexcode[4:8], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
+        return Axon(input=Creature.allNeurons[input], output=Creature.allNeurons[output], factor=factor)
 
 class ActionOption():
     def __init__(self, action: typing.Callable, target: any, weight: float, relevantNeuron: Neuron):
@@ -78,6 +85,7 @@ class Creature():
     attackTarget: any
     fleeTarget: any
     mateTarget: any
+    eatTarget: Resource
     moveTarget: MapNode
     path: list[MapNode]
 
@@ -100,10 +108,10 @@ class Creature():
     ]
     
     envNeurons:list[Neuron] = [
-        Neuron(NeuronType.environment, name='meat', sense=lambda resource: 1 if resource.type==ResourceType.meat else 0),
-        Neuron(NeuronType.environment, name='fruit', sense=lambda resource: 1 if resource.type==ResourceType.fruit else 0),
-        Neuron(NeuronType.environment, name='grass', sense=lambda resource: 1 if resource.type==ResourceType.grass else 0),
-        Neuron(NeuronType.environment, name='tree', sense=lambda resource: 1 if resource.type==ResourceType.tree else 0)
+        Neuron(NeuronType.environment, name='see_meat', sense=lambda resource: 1 if resource.type==ResourceType.meat else 0),
+        Neuron(NeuronType.environment, name='see_fruit', sense=lambda resource: 1 if resource.type==ResourceType.fruit else 0),
+        Neuron(NeuronType.environment, name='see_grass', sense=lambda resource: 1 if resource.type==ResourceType.grass else 0),
+        Neuron(NeuronType.environment, name='see_tree', sense=lambda resource: 1 if resource.type==ResourceType.tree else 0)
     ]
 
     relayNeurons:list[Neuron] = [Neuron(NeuronType.relay, name=f'relay_{n}') for n in range(8)]
@@ -113,9 +121,11 @@ class Creature():
         Neuron(NeuronType.action, name='action_flee', action=lambda self, other: self.flee(other)),
         Neuron(NeuronType.action, name='action_mate', action=lambda self, other: self.mate(other)),
         Neuron(NeuronType.action, name='action_eat', action=lambda self, resource: self.eat(resource)),
-        Neuron(NeuronType.action, name='action_turn', action=lambda self, direction: self.turn(direction)),
+        Neuron(NeuronType.action, name='action_turnleft', action=lambda self, _: self.turnLeft),
+        Neuron(NeuronType.action, name='action_turnright', action=lambda self, _: self.turnRight),
         Neuron(NeuronType.action, name='action_move', action=lambda self, _: self.move()),
-        Neuron(NeuronType.action, name='action_rest', action=lambda self, _: self.rest()) 
+        Neuron(NeuronType.action, name='action_rest', action=lambda self, _: self.rest()),
+        Neuron(NeuronType.action, name='action_wander', action=lambda self, _: self.wander()) 
     ]
 
     memNeurons:list[Neuron] = [MemNeuron(False, name=f'memory_{n}') for n in range(8)]
@@ -180,11 +190,7 @@ class Creature():
         for n in range(int(len(genome)/8)):
             if n >= self.intelligence: break
             
-            axon = genome[n * 8: (n + 1) * 8]
-            input = int(axon[:2], 16) % len(self.allNeurons)
-            output = int(axon[2:4], 16) % len(self.allNeurons)
-            factor = int(axon[4:8], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
-            axon = Axon(input=self.allNeurons[input], output=self.allNeurons[output], factor=factor)
+            axon = Axon.fromHex(genome[n * 8: (n + 1) * 8])
             if axon.input.type in [NeuronType.creature, NeuronType.environment, NeuronType.self]:
                 self.senseAxons.append(axon)
             elif axon.input.type == NeuronType.memory:
@@ -198,8 +204,8 @@ class Creature():
 
     def animate(self):
         options = self.processEnvironment(self.getVisionRanges())
-        options.append(ActionOption(self.rest, None, self.sprintMoves))
-        options.append(ActionOption(self.wander, None, 0.5))
+        options.append(ActionOption(self.rest, None, self.sprintMoves * 0.05, netIndex['action_rest']))
+        options.append(ActionOption(self.wander, None, 0.1, netIndex['action_wander']))
         action = max(*options, key=lambda option: option.weight)
         if action.target:
             action.action(self, action.target)
@@ -210,7 +216,12 @@ class Creature():
         action.neuron.activate(1)
         for axon in self.actionAxons:
             axon.output.activate(axon.input.activation * axon.factor)
-
+        
+        return action.neuron.name
+    
+    def eat(self, resource: Resource):
+        self.eatTarget = resource
+        
     def attack(self, other):
         self.attackTarget = other
 
@@ -223,8 +234,11 @@ class Creature():
     def wander(self):
         self.moveTarget = random.choice(self.location.neighbors)
 
-    def turn(self, direction):
-        self.direction = round(self.direction + direction) % len(self.location.neighbors)
+    def turnLeft(self, direction):
+        self.direction = (self.direction - 1 + len(self.location.neighbors)) % len(self.location.neighbors)
+
+    def turnRight(self, direction):
+        self.direction = (self.direction + 1) % len(self.location.neighbors)
 
     def move(self):
         self.location = self.world.nodes[self.location.neighbors[self.direction].index]
@@ -275,10 +289,10 @@ class Creature():
             for node in layer:
                 if (node.occupant):
                     other = node.occupant
-                    actionOptions.append(self.processStimulus(other, 'creature', distance + 1))
+                    actionOptions.append(self.processStimulus(other, 'creature', 1/(distance + 1)))
 
                 if (node.resource):
-                    actionOptions.append(self.processStimulus(node.resource, 'resource', distance + 1))
+                    actionOptions.append(self.processStimulus(node.resource, 'resource', 1/(distance + 1)))
 
         return actionOptions
 
@@ -294,7 +308,7 @@ class Creature():
         elif type == 'birth':
             self.allNeurons[netIndex['birth']].activate(7)
         elif type == 'injury':
-            self.allNeurons[netIndex['injury']].activate(7)
+            self.allNeurons[netIndex['injury']].activate(magnitude)
 
         # the order is important here vvv
         for axon in self.senseAxons + self.memoryAxons + self.relayAxons:
