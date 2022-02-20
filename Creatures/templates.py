@@ -1,28 +1,23 @@
-from creatures.creature import Creature, netIndex
+from creatures.creature import *
 from creatures.genome import *
 
-basicBrain = (
-    # 00 = othercreature.deadliness - self.deadliness
-    # 01 = othercreature.age/lifespan
-    # 02 = other.health
-    # 03 = self.similarity(other)
-    # 04 = other.speed - self.speed
-    # 05 = other.size
-    # 06 = self.energy
-    # 07 = self.health
-    # 08 = self.age
-    # 09 = self.sprintmoves
-    # 0a = resource.meat (0/1)
-    # 0b = resource.fruit
-    # 0c = resource.grass
-    # 0d = resource.tree
-    # 2d = fight
-    # 2e = flee
-    # 2f = "mate"
-    # 30 = eat
-    '002effff' + # flee! if other.deadliness is higher
-    '032fffff' + # mate if other is similar to self
-    '06300000' + # don't eat if you're not hungry
-    '0c30ffff' + # eat grass if you see grass
-    '' # don't mate if energy is low
-)
+basicBrain = [
+    Axon(netIndex['creature_deadliness'], netIndex['flee'], 1.0),
+    Axon(netIndex['similarity'], netIndex['action_mate'], 1.0),
+    Axon(netIndex['grass'], netIndex['action_eat'], 1.0),
+    Axon(netIndex['birth'], netIndex['memory_7'], 1.0),
+    Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
+    Axon(netIndex['self_energy'], netIndex['action_eat'], -0.2),
+    Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
+    Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
+    Axon(netIndex['self_sprints'], netIndex['rest'], 0.5),
+    Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
+    Axon(netIndex['memory_5'], netIndex['rest'], -0.4),
+    Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
+]
+
+# '002effff' + # flee! if other.deadliness is higher
+# '032fffff' + # mate if other is similar to self
+# '06300000' + # don't eat if you're not hungry
+# '0c30ffff' + # eat grass if you see grass
+# '' # don't mate if energy is low
