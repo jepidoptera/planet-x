@@ -1,7 +1,7 @@
 import unittest
 from creatures.genome import *
 from creatures.creature import *
-from creatures.templates import *
+from creatures import templates
 from world.map import *
 
 class testGenome(unittest.TestCase):
@@ -53,18 +53,23 @@ class testCreature(unittest.TestCase):
 
     def scenario_predation(self):
         self.map.clear()
-        creature1 = Creature(self.map, self.map.nodes[74], herbivore_genome, 100)
-        creature1.direction = 2
-        creature2 = Creature(self.map, self.map.nodes[114], carnivore_genome, 100)
-        creature2.direction = 4
-        herbivore_action=creature1.animate()
-        carnivore_action=creature2.animate()
+        herbivore = templates.herbivore(self.map.nodes[74])
+        herbivore.direction=2
+        carnivore = templates.carnivore(self.map.nodes[114])
+        carnivore.direction=4
+        carnivore.energy=100
+        herbivore_action=herbivore.animate()
+        carnivore_action=carnivore.animate()
         self.assertTrue(herbivore_action == 'action_flee')
         self.assertTrue(carnivore_action == 'action_attack')
+        for n in range(10):
+            carnivore.animate()
+        self.assertTrue(herbivore.dead)
+        self.assertTrue(carnivore.energy > 100)
 
     def scenario_herbivory(self):
         self.map.clear()
-        creature1 = Creature(self.map, self.map.nodes[74], herbivore_genome, 100)
+        creature1 = templates.herbivore(self.map.nodes[74])
         creature1.direction = 2
         self.map.nodes[114].resource=Resource(ResourceType.grass, 1) 
         herbivore_action=creature1.animate()
@@ -72,9 +77,9 @@ class testCreature(unittest.TestCase):
 
     def scenario_courtship(self):
         self.map.clear()
-        creature1 = Creature(self.map, self.map.nodes[21], herbivore_genome, 100)
+        creature1 = templates.herbivore(self.map.nodes[21])
         creature1.direction = 3
-        creature2 = Creature(self.map, self.map.nodes[24], herbivore_genome, 100)
+        creature2 = templates.herbivore(self.map.nodes[24])
         creature2.direction = 0
         creature1_action=creature1.animate()
         creature2_action=creature2.animate()
