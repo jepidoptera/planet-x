@@ -33,7 +33,7 @@ class Neuron():
     def sense(self, *args):
         self.activate(self._sense(*args))
     def activate(self, amount):
-        self.activation = amount
+        self.activation += amount
     def clear(self):
         self.activation = 0
 # 🙌🏾
@@ -134,7 +134,34 @@ class Creature():
         self.allNeurons:list[Neuron] = self.creatureNeurons + self.selfNeurons + self.envNeurons + self.memNeurons + self.relayNeurons + self.actionNeurons
         self.unpackGenome(self.mindStr)
 
+        self.processStimulus('birth')
         return
+
+    @property 
+    def metabolism(self) -> float:
+        # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
+        return self._metabolism + self.sprintMoves / self.stamina
+
+    @property
+    def location(self) -> MapNode:
+        return self._location
+
+    @location.setter
+    def location(self, newlocation: MapNode):
+        self._location.occupant = None
+        self._location = newlocation
+        newlocation.occupant = self
+        return self.location
+
+    @property
+    def health(self) -> float:
+        return self._health
+
+    @health.setter
+    def health(self, value):
+        self._health = value
+        if self.health <= 0:
+            self.die()
 
     def fromHex(self, hexcode) -> Axon:
         input = int(hexcode[:2], 16) % len(self.allNeurons)
@@ -166,23 +193,6 @@ class Creature():
 
         return self.senseAxons + self.memoryAxons + self.relayAxons + self.actionAxons
 
-    def think(self) -> str:
-        options = self.processEnvironment(self.getVisionRanges())
-        options.append(ActionOption(self.rest, None, self.sprintMoves * 0.05, netIndex['action_rest']))
-        options.append(ActionOption(self.wander, None, 0.1, netIndex['action_wander']))
-        action = max(*options, key=lambda option: option.weight)
-        if action.target:
-            action.action(self, action.target)
-        else:
-            action.action()
-        # propagate this action into the net, potentially setting memory neurons or smth
-        for neuron in self.actionNeurons: neuron.clear()
-        action.neuron.activate(1)
-        for axon in self.actionAxons:
-            axon.output.activate(axon.input.activation * axon.factor)
-
-        return action.neuron.name
-
     def animate(self):
         if self.dead: return 'dead'
 
@@ -213,15 +223,21 @@ class Creature():
             return 'action_eat'
 
         if self.attackTarget and self.attackTarget.location in self.location.neighbors:
+            self.direction = self.location.neighbors.index(self.attackTarget.location)
             self.attackTarget.health -= self.deadliness
             Creature.processStimulus(self.attackTarget, type='injury', magnitude=self.deadliness)
+            if self.attackTarget.dead: self.attackTarget = None
             
         # move along the path
         if (self.path):
             nextMove=self.path.pop(0)
-            self.location.occupant = None
-            self.location = nextMove
-            self.location.occupant = self
+            if nextMove.occupant:
+                self.path = []
+            else:
+                self.location.occupant = None
+                self.location = nextMove
+                self.location.occupant = self
+                self.direction = max(self.direction, len(self.location.neighbors))
             
     def seekFood(self, foodLocation: MapNode):
         self.eatTarget = foodLocation.resource
@@ -238,7 +254,9 @@ class Creature():
             self.path=Map.findPath(self.location, other.location)
 
     def flee(self, other):
-        self.fleeTarget = other
+        toOther=Map.findPath(self.location, other.location)
+        self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
+        self.path=[self.location.neighbors[self.direction]]
 
     def mate(self, other):
         self.mateTarget = other
@@ -255,43 +273,32 @@ class Creature():
         self.direction = (self.direction + 1) % len(self.location.neighbors)
 
     def moveForward(self):
-        self.path=[]
-        self.location = self.world.nodes[self.location.neighbors[self.direction].index]
-        self.direction = max(self.direction, len(self.location.neighbors))
+        self.path=[self.world.nodes[self.location.neighbors[self.direction].index]]
 
     def rest(self):
         self.sprintMoves -= 1
-
-    @property 
-    def metabolism(self) -> float:
-        # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-        return self._metabolism + self.sprintMoves / self.stamina
-
-    @property
-    def location(self) -> MapNode:
-        return self._location
-
-    @location.setter
-    def location(self, newlocation: MapNode):
-        self._location.occupant = None
-        self._location = newlocation
-        newlocation.occupant = self
-        return self.location
-
-    @property
-    def health(self) -> float:
-        return self._health
-
-    @health.setter
-    def health(self, value):
-        self._health = value
-        if self.health <= 0:
-            self.die()
 
     def die(self):
         self.location.resource=Resource(ResourceType.meat, self.energy + self.size)
         self.location.occupant=None
         self.dead=True
+
+    def think(self) -> str:
+        options = self.processEnvironment(self.getVisionRanges())
+        options.append(ActionOption(self.rest, None, self.sprintMoves * 0.05, netIndex['action_rest']))
+        options.append(ActionOption(self.wander, None, 0.1, netIndex['action_wander']))
+        action = max(*options, key=lambda option: option.weight)
+        if action.target:
+            action.action(self, action.target)
+        else:
+            action.action()
+        # propagate this action into the net, potentially setting memory neurons or smth
+        for neuron in self.actionNeurons: neuron.clear()
+        action.neuron.activate(1)
+        for axon in self.actionAxons:
+            axon.output.activate(axon.input.activation * axon.factor)
+
+        return action.neuron.name
 
     def getVisionRanges(self) -> list[list[MapNode]]:
         cones = [
@@ -305,7 +312,7 @@ class Creature():
             for a in range(len(cones))] for b in range(self.sightRange)][i] 
             for node in cone] for i in range(self.sightRange)
         ]
-        return visionLayers
+        return [[self.location]] + visionLayers
 
     def getSimilarity(self, other) -> float:
         similarity = 0.0
@@ -322,23 +329,24 @@ class Creature():
     def processEnvironment(self, vision:list[list[MapNode]]) -> list[ActionOption]:
         actionOptions: list[ActionOption] = []
 
-        for sensor in self.selfNeurons:
-            sensor.sense(self)
-        actionOptions.append(self.processStimulus(target=self, type='self', magnitude=1))
-
         for distance, layer in enumerate(vision):
             for node in layer:
-                if (node.occupant):
+                if (node.occupant==self):
+                    actionOptions.append(self.processStimulus(target=self, type='self', magnitude=1))
+            
+                elif (node.occupant):
                     other = node.occupant
-                    actionOptions.append(self.processStimulus(type='creature', target=other, magnitude=1/(distance + 1)))
+                    actionOptions.append(self.processStimulus(type='creature', target=other, magnitude=1))
 
                 if (node.resource):
-                    actionOptions.append(self.processStimulus(type='food', target=node, magnitude=1/(distance + 1)))
+                    actionOptions.append(self.processStimulus(type='food', target=node, magnitude=1))
 
         return actionOptions
 
     def processStimulus(self, type:str, target:any=None,  magnitude:float=1.0):
         self.clearInputs()
+        for sensor in self.selfNeurons:
+            sensor.sense(self)
         if type == 'food':
             for sensor in self.envNeurons:
                 sensor.sense(target.resource)
@@ -353,7 +361,15 @@ class Creature():
 
         # the order is important here vvv
         for axon in self.senseAxons + self.memoryAxons + self.relayAxons:
-            axon.output.activation += axon.input.activation * axon.factor
+            axon.output.activate(axon.input.activation * axon.factor)
+
+        if target == self or target == None:
+            netIndex['action_attack'].activation=0
+            netIndex['action_eat'].activation=0
+            netIndex['action_mate'].activation=0
+        if type == 'food':
+            netIndex['action_attack'].activation=0
+            netIndex['action_mate'].activation=0
 
         out = max(*[self.actionNeurons], key=lambda n: n.activation)
         return ActionOption(out.action, target, out.activation * magnitude, out)
