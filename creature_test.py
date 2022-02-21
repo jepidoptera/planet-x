@@ -55,25 +55,35 @@ class testCreature(unittest.TestCase):
         self.map.clear()
         herbivore = templates.herbivore(self.map.nodes[74])
         herbivore.direction=2
-        carnivore = templates.carnivore(self.map.nodes[114])
+        carnivore = templates.carnivore(self.map.nodes[114], energy=100)
         carnivore.direction=4
-        carnivore.energy=100
-        herbivore_action=herbivore.animate()
-        carnivore_action=carnivore.animate()
+        herbivore_action=herbivore.think()
+        carnivore_action=carnivore.think()
         self.assertTrue(herbivore_action == 'action_flee')
         self.assertTrue(carnivore_action == 'action_attack')
-        for n in range(10):
+        herbivore.animate()
+        self.assertTrue(herbivore.location.index in [64, 65])
+        for n in range(5):
             carnivore.animate()
+
         self.assertTrue(herbivore.dead)
+
+        carnivore.think()
+        carnivore.animate()
+        carnivore.animate()
+
         self.assertTrue(carnivore.energy > 100)
 
     def scenario_herbivory(self):
         self.map.clear()
-        creature1 = templates.herbivore(self.map.nodes[74])
-        creature1.direction = 2
+        herbivore = templates.herbivore(self.map.nodes[74], energy=100)
+        herbivore.direction = 2
         self.map.nodes[114].resource=Resource(ResourceType.grass, 1) 
-        herbivore_action=creature1.animate()
+        herbivore_action=herbivore.think()
         self.assertTrue(herbivore_action == 'action_eat')
+        for n in range(10):
+            herbivore.animate()
+        self.assertTrue (herbivore.energy > 100)
 
     def scenario_courtship(self):
         self.map.clear()
@@ -81,8 +91,8 @@ class testCreature(unittest.TestCase):
         creature1.direction = 3
         creature2 = templates.herbivore(self.map.nodes[24])
         creature2.direction = 0
-        creature1_action=creature1.animate()
-        creature2_action=creature2.animate()
+        creature1_action=creature1.think()
+        creature2_action=creature2.think()
         self.assertTrue(creature1_action == 'action_mate')
         self.assertTrue(creature2_action == 'action_mate')
 
