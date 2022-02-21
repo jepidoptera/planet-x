@@ -102,9 +102,10 @@ class Map():
         # visionCone = self.nodes[startIndex].visionTree[direction]
         # nodeList = [node.index for layer in visionCone[:distance] for node in layer]
 
-        def showVision(index):
+        def showVision(index: int) -> str:
             if index == startIndex: return "▓"* len(str(index))
-            return index if index not in nodeList else "█"*(len(str(index)))
+            if index in nodeList: return "█"*(len(str(index)))
+            return str(index) 
 
         for y in range(self.mapHeight):
             print(''.join(["{0}    ".format(showVision(y + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
@@ -116,33 +117,33 @@ class Map():
             def __init__(self, node: MapNode, previous: MapNode=None, pathLength: int=0, distanceTraveled: int=0):
                 self.node = node
                 self.previous=previous
-                self.f = pathLength # estimated total path length
-                self.g = distanceTraveled # distance traveled so far
+                self.pathLength = pathLength # estimated total path length
+                self.distanceTraveled = distanceTraveled # distance traveled so far
 
         openList = [nodeOption(startNode, 0)]
-        closedList = []
+        closedList = set()
         while openList:
-            currentNode = min(openList, key=lambda node: node.f)
+            currentNode = min(openList, key=lambda node: node.pathLength)
             openList.remove(currentNode)
-            closedList.append(currentNode.node)
+            closedList.add(currentNode.node.index)
 
             if currentNode.node == endNode:
                 path = []
                 while True:
-                    path = [currentNode.node] + path
                     if currentNode.node == startNode: break
+                    path = [currentNode.node] + path
                     currentNode = currentNode.previous
                 return path
 
             for neighbor in currentNode.node.neighbors:
-                if neighbor in closedList or neighbor.obstruction:
+                if neighbor.index in closedList or neighbor.obstruction:
                     continue
                 remainingDistance = Map.getDistance(neighbor, endNode)
-                distanceTraveled = currentNode.g + 1
+                distanceTraveled = currentNode.distanceTraveled + 1
                 pathLength = distanceTraveled + remainingDistance
                 for i, option in enumerate(openList):
                     if option.node == neighbor:
-                        if option.g > distanceTraveled:
+                        if option.distanceTraveled > distanceTraveled:
                             openList[i] = nodeOption(neighbor, currentNode, pathLength, distanceTraveled)
                         break
                 openList.append(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
