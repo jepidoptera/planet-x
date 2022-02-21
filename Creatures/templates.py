@@ -7,23 +7,23 @@ def axonsToHex(axons: list[Axon]):
 def randomAxon(): 
     return ''.join(random.choice('abcdef1234567890') for n in range(8))
 
-def herbivore(location: MapNode) -> Creature:
+def herbivore(location: MapNode, energy: float=100) -> Creature:
     herbivore_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
         Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
         Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
-        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.2),
+        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.005),
         Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
-        Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
+        Axon(netIndex['self_energy'], netIndex['relay_7'], -0.02),
         Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.5),
         Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
         Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
         Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
     ]
     return Creature(location, Genome(
-        energy=100, 
+        energy=energy, 
         deadliness=0, 
         speed=3, 
         stamina=3, 
@@ -38,7 +38,7 @@ def herbivore(location: MapNode) -> Creature:
         mindStr=axonsToHex(herbivore_mind)
     ), energy=100)
 
-def carnivore(location: MapNode) -> Creature:
+def carnivore(location: MapNode, energy: float=100) -> Creature:
     carnivore_mind = [
         # attack creatures less deadly than self
         Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.5),
@@ -59,7 +59,7 @@ def carnivore(location: MapNode) -> Creature:
         Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.2),
     ]
     return Creature(location,  Genome(
-        energy=100, 
+        energy=energy, 
         deadliness=4, 
         speed=4, 
         stamina=3, 
@@ -96,10 +96,3 @@ def carnivore(location: MapNode) -> Creature:
 # 9    29    49    69    89    109    129    149    169    189
 #   19    39    59    79    99    119    139    159    179    199
 
-    
-
-# '002effff' + # flee! if other.deadliness is higher
-# '032fffff' + # mate if other is similar to self
-# '06300000' + # don't eat if you're not hungry
-# '0c30ffff' + # eat grass if you see grass
-# '' # don't mate if energy is low
