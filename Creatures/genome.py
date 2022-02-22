@@ -42,7 +42,7 @@ class Speed(Stat):
 
 class Longevity(Stat):
     min = 1
-    max = 20
+    max = INFINITY # imortality would require infinite energy tho
     metacost = 1.0
     growcost = 1.0
 
@@ -86,7 +86,7 @@ class Stamina(Stat):
 
 class Genome():
     mutationRate = 0.5
-    def __init__(self, energy: float, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str):
+    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str):
 
         # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
 
@@ -122,8 +122,6 @@ class Genome():
         
         self.mindStr = mindStr
         
-        self.sprintMoves = 0
-        self.energy = energy
         self.age = 0
         # *size
         # *deadliness
@@ -139,19 +137,6 @@ class Genome():
         # *peripheralvision
 
         return
-
-    def mutate(self):
-        # if random.random() > self.mutationRate: return 0
-
-        brainMutation = int(random.random() * 2)
-
-        def modString(string, char, position):
-            return string[:position] + char + string[position+1:]
-
-        if (brainMutation):
-            self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
-        else:
-            self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
     @property
     def size(self):
@@ -203,9 +188,21 @@ class Genome():
     def longevity(self):
         return self._longevity
 
+    def mutate(self):
+        # if random.random() > self.mutationRate: return 0
+
+        brainMutation = int(random.random() * 2)
+
+        def modString(string, char, position):
+            return string[:position] + char + string[position+1:]
+
+        if (brainMutation):
+            self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
+        else:
+            self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
+
     def printStats(self):
         print(*[
-            f'energy: {self.energy}', 
             f'deadliness: {self.deadliness}', 
             f'speed: {self.speed}', 
             f'stamina: {self.stamina}', 
@@ -225,7 +222,6 @@ class Genome():
 
 def randomGenome():
     return Genome(
-        energy = random.random() * 32, 
         deadliness = int(random.random() * (Deadliness.max + 1)),
         speed = int(random.random() * (Speed.max + 1)),
         stamina = int(random.random() * (Stamina.max) + 1),
@@ -240,5 +236,28 @@ def randomGenome():
         mindStr = "".join(random.choice('abcdef1234567890') for i in range(1028))
     )
 
-c = randomGenome()
-while c.mutate() == 0: pass
+def merge(*args: Genome) -> Genome:
+    merged = Genome(
+        deadliness=random.choice([g.deadliness for g in args]),
+        speed=random.choice([g._speed for g in args]),
+        stamina=random.choice([g._stamina for g in args]),
+        fortitude=random.choice([g._fortitude for g in args]),
+        intelligence=random.choice([g._intelligence for g in args]),
+        longevity=random.choice([g._longevity for g in args]),
+        fertility=random.choice([g._fertility for g in args]),
+        meateating=random.choice([g._meateating for g in args]),
+        planteating=random.choice([g._planteating for g in args]),
+        sightrange=random.choice([g._sightrange for g in args]),
+        sightfield=random.choice([g._sightfield for g in args]),
+        mindStr=mergeMinds(*[arg.mindStr for arg in args]),
+    )
+    return merged
+def mergeMinds(*args: str) -> str:
+    mindStr=''
+    for n in range(int(max(*[len(arg) for arg in args])/8)):
+        genes=[arg[n*8:(n+1)*8] if len(arg) >= n*8 else '' for arg in args]
+        mindStr += random.choice(genes)
+    return mindStr
+
+Genome.merge=staticmethod(merge)
+Genome.randomGenome=staticmethod(randomGenome)
