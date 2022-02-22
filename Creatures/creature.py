@@ -1,8 +1,10 @@
 # good start
 # you made a file!
 # 288 lines long now. got about ten other files as well
+from cgi import MiniFieldStorage
 from enum import Enum
 import random
+from xml.dom import minidom
 from creatures.genome import Genome
 from world.map import *
 import typing
@@ -93,39 +95,46 @@ class Creature():
     relayAxons: list[Axon]
     actionAxons: list[Axon]
 
-    def __init__(self, location:MapNode, genome:Genome, energy: float):
+    def __init__(self, location:MapNode, genome1:Genome, genome2:Genome=None, energy: float=100):
+        if not genome2: genome2=genome1
         self.dead=False
         self._location = location
         location.occupant = self
         self.path=[]
         
-        self.genome = genome
-        self.deadliness = genome.deadliness
-        self.speed = genome.speed
-        self.fortitude = genome.fortitude
-        self.fertility = genome.fertility
-        self.longevity = genome.longevity
-        self.stamina = genome.stamina
-        self.intelligence = genome.intelligence
-        self.meatEating = genome.meatEating
-        self.plantEating = genome.plantEating
-        self.sightRange = genome.sightRange
-        self.sightField = genome.sightField
-        self.size = genome.size.value
-        self.mindStr = genome.mindStr
+        self.deadliness = (genome1.deadliness + genome2.deadliness)/2
+        self.speed = (genome1.speed + genome2.speed)/2
+        self.fortitude = (genome1.fortitude + genome2.fortitude)/2
+        self.fertility = (genome1.fertility + genome2.fertility)/2
+        self.longevity = (genome1.longevity + genome2.longevity)/2
+        self.stamina = (genome1.stamina + genome2.stamina)/2
+        self.intelligence = (genome1.intelligence + genome2.intelligence)/2
+        self.meatEating = (genome1.meatEating + genome2.meatEating)/2
+        self.plantEating = (genome1.plantEating + genome2.plantEating)/2
+        self.sightRange = int((genome1.sightRange + genome2.sightRange)/2)
+        self.sightField = int((genome1.sightField + genome2.sightField)/2)
+        self.size = (genome1.size.value + genome2.size.value)/2
+        self.mindStr = ''
+        for n in range(int(max(len(genome1.mindStr), len(genome2.mindStr))/8)):            
+            gene1 = genome1.mindStr[n*8:(n+1)*8] if n < len(genome1.mindStr) else ''
+            gene2 = genome2.mindStr[n*8:(n+1)*8] if n < len(genome2.mindStr) else ''
+            if gene1 and gene2:
+                self.mindStr += random.choice([gene1, gene2])
+            elif gene1:
+                self.mindStr += gene1
+            elif gene2:
+                self.mindStr += gene2
 
         self.age = 0
         self._health = self.fortitude
         self.energy = energy
         self.sprintMoves = 0
-        self._metabolism = sum([stat.value * stat.metacost for stat in genome.stats.values()])/1000
+        self._metabolism = (sum([stat.value * stat.metacost for stat in genome1.stats.values()]) +
+            sum([stat.value * stat.metacost for stat in genome2.stats.values()])) / 2000
 
         self.direction = int(random.random() * len(self.location.neighbors))
-        # *age
-        # *wisdom
-        # *hunger
-        # *health
-        # *stamina
+        self.thinkTimer = int(random.random() * self.intelligence)
+        self.moveTimer = int(random.random() * self.speed)
 
         # instantiate memory neurons specific to this creature 
         # the rest are shared across all creatures to save space
@@ -179,7 +188,7 @@ class Creature():
         self.memoryAxons = []
         self.senseAxons = []
         for n in range(int(len(genome)/8)):
-            if n >= self.intelligence: break
+            if n >= self.intelligence * 2: break
             
             axon = self.fromHex(genome[n * 8: (n + 1) * 8])
             if axon.input.type in [NeuronType.creature, NeuronType.environment, NeuronType.self]:
@@ -316,10 +325,10 @@ class Creature():
 
     def getSimilarity(self, other) -> float:
         similarity = 0.0
-        commonRange = range(min(len(self.genome.mindStr), len(other.genome.mindStr)))
+        commonRange = range(min(len(self.mindStr), len(other.mindStr)))
         increment = 1/len(commonRange)
         for c in commonRange:
-            if self.genome.mindStr[c] == other.genome.mindStr[c]: similarity += increment
+            if self.mindStr[c] == other.mindStr[c]: similarity += increment
         return similarity
 
     def clearInputs(self):

@@ -7,8 +7,8 @@ import random
 class Stat():
     min = 0
     max = INFINITY
-    metacost = 0.0
-    growcost = 0.0
+    metacost:float=0.0
+    growcost:float=0.0
     def __init__(self, value, min:int = 0, max:int = 0, metacost:float = 0.0, growcost:float = 0.0):
         if max: self.max = max
         if min: self.min = min
@@ -48,7 +48,7 @@ class Longevity(Stat):
 
 class Intelligence(Stat):
     min = 10
-    max = 128
+    max = 60
     metacost = 0.5
     growcost = 0.1
 
@@ -90,7 +90,7 @@ class Genome():
 
         # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
 
-        self.stats = {
+        self.stats:dict[str: Stat] = {
             "deadliness": Deadliness(value=deadliness),
             "speed": Speed(value=speed), 
             "stamina": Stamina(value=stamina),
@@ -105,19 +105,20 @@ class Genome():
         }
 
         # phenome
-        self.__deadliness = self.stats["deadliness"].value
-        self.__speed = self.stats["speed"].value
-        self.__stamina = self.stats["stamina"].value
-        self.__fortitude = self.stats["fortitude"].value
-        self.__intelligence = self.stats["intelligence"].value
-        self.__longevity = self.stats["longevity"].value
-        self.__fertility = self.stats["fertility"].value
-        self.__meateating = self.stats["meat eating"].value
-        self.__planteating = self.stats["plant eating"].value
-        self.__sightrange = self.stats["sight range"].value
-        self.__sightfield = self.stats["sight field"].value
+        self._deadliness = self.stats["deadliness"].value
+        self._speed = self.stats["speed"].value
+        self._stamina = self.stats["stamina"].value
+        self._fortitude = self.stats["fortitude"].value
+        self._intelligence = self.stats["intelligence"].value
+        self._longevity = self.stats["longevity"].value
+        self._fertility = self.stats["fertility"].value
+        self._meateating = self.stats["meat eating"].value
+        self._planteating = self.stats["plant eating"].value
+        self._sightrange = self.stats["sight range"].value
+        self._sightfield = self.stats["sight field"].value
+        self.stats["sight field"].metacost=self._sightrange/5
 
-        self.__size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
+        self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
         
         self.mindStr = mindStr
         
@@ -156,51 +157,51 @@ class Genome():
     def size(self):
         # return self.__deadliness - self.__fertility / 4
         # size is just the sum of all stats
-        return self.__size
+        return self._size
 
     @property
     def fertility(self):
-        return self.__fertility ** 2 / (self.__fertility + self.__longevity / 3)
+        return self._fertility ** 2 / (self._fertility + self._longevity / 3)
 
     @property
-    def meatEating(self):
-        return (self.__meateating + 1) ** 2 / (1 + self.__meateating + self.__planteating / 2)
+    def meatEating(self) -> float:
+        return (self._meateating + 1) ** 2 / (1 + self._meateating + self._planteating / 2)
 
     @property
-    def plantEating(self):
-        return (self.__planteating + 1) ** 2 / (1 + self.__meateating / 2 + self.__planteating)
+    def plantEating(self) -> float:
+        return (self._planteating + 1) ** 2 / (1 + self._meateating / 2 + self._planteating)
 
     @property
-    def sightRange(self):
-        return self.__sightrange
+    def sightRange(self) -> int:
+        return self._sightrange
 
     @property
-    def sightField(self):
-        return self.__sightfield
+    def sightField(self) -> int:
+        return self._sightfield
 
     @property
-    def deadliness(self):
-        return self.__deadliness
+    def deadliness(self) -> float:
+        return self._deadliness
 
     @property
-    def speed(self):
-        return self.__speed
+    def speed(self) -> float:
+        return self._speed
 
     @property
-    def stamina(self):
-        return self.__stamina ** 2 / (self.__stamina + self.__speed / 3 + 1)
+    def stamina(self) -> float:
+        return self._stamina ** 2 / (self._stamina + self._speed / 3 + 1)
 
     @property
-    def fortitude(self):
-        return self.__fortitude
+    def fortitude(self) -> float:
+        return self._fortitude
 
     @property
-    def intelligence(self):
-        return int(self.__intelligence ** 2 / (self.__intelligence + self.__sightrange * self.__sightfield))
+    def intelligence(self) -> int:
+        return self._intelligence
 
     @property
     def longevity(self):
-        return self.__longevity
+        return self._longevity
 
     def printStats(self):
         print(*[
