@@ -78,10 +78,11 @@ class ActionOption():
 # class Brain():
 
 class Creature():
-    attackTarget: any = None
-    fleeTarget: any = None
-    mateTarget: any = None
-    eatTarget: Resource = None
+    victim: any = None
+    fear: any = None
+    mate: any = None
+    offspring: any = None
+    food: Resource = None
     path: list[MapNode] = []
 
     selfNeurons: list[Neuron]
@@ -102,6 +103,7 @@ class Creature():
         location.occupant = self
         self.path=[]
         
+        self.genome=[genome1, genome2]
         self.deadliness = (genome1.deadliness + genome2.deadliness)/2
         self.speed = (genome1.speed + genome2.speed)/2
         self.fortitude = (genome1.fortitude + genome2.fortitude)/2
@@ -168,7 +170,7 @@ class Creature():
 
     @health.setter
     def health(self, value):
-        self._health = value
+        self._health = min(value, self.fortitude)
         if self.health <= 0:
             self.die()
 
@@ -206,69 +208,92 @@ class Creature():
         if self.dead: return 'dead'
 
         self.energy -= self.metabolism
-        self.health += min(self.fortitude, self.health + 0.01)
-        self.age += 1
+        self.health += self.fortitude/1000
+        self.age += .01
 
         if self.age > self.longevity * 100:
             self.die()
             return 'action_die'
 
-        if self.eatTarget and self.location.resource == self.eatTarget:
+        if self.food and self.location.resource == self.food:
             bitesize=1
             energyValue=0
-            if self.eatTarget.type == ResourceType.meat:
-                bitesize=min(self.meatEating, self.eatTarget.value)
+            if self.food.type == ResourceType.meat:
+                bitesize=min(self.meatEating, self.food.value)
                 energyValue=self.meatEating*bitesize/7
-            elif self.eatTarget.type == ResourceType.grass:
-                bitesize=min(self.plantEating, self.eatTarget.value)
+            elif self.food.type == ResourceType.grass:
+                bitesize=min(self.plantEating, self.food.value)
                 energyValue=self.plantEating*bitesize/7
-            elif self.eatTarget.type == ResourceType.fruit:
-                bitesize=min(self.plantEating, self.eatTarget.value)
+            elif self.food.type == ResourceType.fruit:
+                bitesize=min(self.plantEating, self.food.value)
                 energyValue=self.plantEating*bitesize/7
-            self.eatTarget.value -= bitesize
+            self.food.value -= bitesize
             self.energy += energyValue
             # all gone
-            if self.eatTarget.value <= 0: self.location.resource = None
+            if self.food.value <= 0: self.location.resource = None
             return 'action_eat'
 
-        if self.attackTarget and self.attackTarget.location in self.location.neighbors:
-            self.direction = self.location.neighbors.index(self.attackTarget.location)
-            self.attackTarget.health -= self.deadliness
-            Creature.processStimulus(self.attackTarget, type='injury', magnitude=self.deadliness)
-            if self.attackTarget.dead: self.attackTarget = None
+        elif self.victim and self.victim.location in self.location.neighbors:
+            self.direction = self.location.neighbors.index(self.victim.location)
+            self.victim.health -= self.deadliness
+            Creature.processStimulus(self.victim, type='injury', magnitude=self.deadliness)
+            if self.victim.dead: self.victim = None 
+            return 'action_attack'
+
+        elif self.mate and self.mate.location in self.location.neighbors:
+            self.energy /= 2
+            self.offspring=Creature(
+                self.location, 
+                Genome.merge(*self.genome), 
+                Genome.merge(*self.mate.genome), 
+                energy=self.energy
+            )
             
         # move along the path
-        if (self.path):
+        elif (self.path):
             nextMove=self.path.pop(0)
             if nextMove.occupant:
                 self.path = []
             else:
                 self.location.occupant = None
+                self.direction=self.location.neighbors.index(nextMove)
                 self.location = nextMove
                 self.location.occupant = self
                 self.direction = max(self.direction, len(self.location.neighbors))
+                self.sprintMoves += 1
+
+        else:
+            self.sprintMoves -= 1
             
     def seekFood(self, foodLocation: MapNode):
-        self.eatTarget = foodLocation.resource
+        self.food = foodLocation.resource
         if self.location == foodLocation:
             self.path=[]
         else:
             self.path=Map.findPath(self.location, foodLocation)
 
     def attack(self, other):
-        self.attackTarget = other
+        self.victim = other
         if other.location in self.location.neighbors:
             self.path=[]
         else:
             self.path=Map.findPath(self.location, other.location)
 
     def flee(self, other):
-        toOther=Map.findPath(self.location, other.location)
-        self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
-        self.path=[self.location.neighbors[self.direction]]
+        self.fear = other
+        away=max([n for n in self.location.neighbors], key=lambda n: Map.getDistance(n, other.location))
+        self.path=[away]
+        # vvv saved this old code just to compare with the elegance of this ^^^
+        # toOther=Map.findPath(self.location, other.location)
+        # self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
+        # self.path=[self.location.neighbors[self.direction]]
 
-    def mate(self, other):
-        self.mateTarget = other
+    def seekMate(self, other):
+        self.mate = other
+        if self.mate.location in self.location.neighbors:
+            self.path=[]
+        else:
+            self.path=Map.findPath(self.location, other.location)
 
     def wander(self):
         # works
@@ -285,7 +310,7 @@ class Creature():
         self.path=[self.world.nodes[self.location.neighbors[self.direction].index]]
 
     def rest(self):
-        self.sprintMoves -= 1
+        self.path=[]
 
     def die(self):
         self.location.resource=Resource(ResourceType.meat, self.energy + self.size)
@@ -294,7 +319,7 @@ class Creature():
 
     def think(self) -> str:
         options = self.processEnvironment(self.getVisionRanges())
-        options.append(ActionOption(self.rest, None, self.sprintMoves * 0.05, netIndex['action_rest']))
+        options.append(ActionOption(self.rest, None, self.sprintMoves / self.stamina, netIndex['action_rest']))
         options.append(ActionOption(self.wander, None, 0.1, netIndex['action_wander']))
         action = max(*options, key=lambda option: option.weight)
         if action.target:
@@ -430,7 +455,7 @@ Creature.relayNeurons=list[Neuron]([Neuron(NeuronType.relay, name=f'relay_{n}') 
 Creature.actionNeurons=list[Neuron]([
     Neuron(NeuronType.action, name='action_attack', action=Creature.attack),
     Neuron(NeuronType.action, name='action_flee', action=Creature.flee),
-    Neuron(NeuronType.action, name='action_mate', action=Creature.mate),
+    Neuron(NeuronType.action, name='action_mate', action=Creature.seekMate),
     Neuron(NeuronType.action, name='action_eat', action=Creature.seekFood),
     Neuron(NeuronType.action, name='action_turnleft', action=Creature.turnLeft),
     Neuron(NeuronType.action, name='action_turnright', action=Creature.turnRight),
