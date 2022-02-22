@@ -85,7 +85,8 @@ class Stamina(Stat):
     growcost = 1.0
 
 class Genome():
-    mutationRate = 0.5
+    mutationRate=0.5
+    mutations=0
     def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str):
 
         # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
@@ -189,17 +190,19 @@ class Genome():
         return self._longevity
 
     def mutate(self):
-        # if random.random() > self.mutationRate: return 0
+        if random.random() < self.mutationRate: 
+            self.mutations += 1
+            brainMutation = int(random.random() * 2)
 
-        brainMutation = int(random.random() * 2)
+            def modString(string, char, position):
+                return string[:position] + char + string[position+1:]
 
-        def modString(string, char, position):
-            return string[:position] + char + string[position+1:]
+            if (brainMutation):
+                self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
+            else:
+                self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
-        if (brainMutation):
-            self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
-        else:
-            self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
+        return self
 
     def printStats(self):
         print(*[
