@@ -242,10 +242,11 @@ class Creature():
 
         elif self.mate and self.mate.location in self.location.neighbors:
             self.energy /= 2
+            self.fertility -= 1
             self.offspring=Creature(
                 self.location, 
-                Genome.merge(*self.genome), 
-                Genome.merge(*self.mate.genome), 
+                Genome.merge(*self.genome).mutate(), 
+                Genome.merge(*self.mate.genome).mutate(), 
                 energy=self.energy
             )
             
