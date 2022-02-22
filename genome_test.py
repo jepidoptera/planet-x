@@ -2,43 +2,48 @@ import unittest
 from creatures.genome import *
 
 class testGenome(unittest.TestCase):
-    gene = Genome(
-        energy=1, 
-        deadliness=1, 
-        speed=1, 
-        stamina=4, 
-        fortitude=4, 
-        intelligence=33, 
-        longevity=6, 
-        fertility=9, 
-        meateating=3, 
-        planteating=7, 
-        sightrange=5, 
-        sightfield=3,
-        mindStr='345979023qr79fa70450b0734ec3098e90283b'
-    )
+
     def test(self):
-        print (self.gene.stamina)
-        self.assertTrue(self.gene.stamina == 3)
-        print ('raw')
-        print ()
-        print(*[f'{key}: {value.value}' for i, (key, value) in enumerate(self.gene.stats.items())], sep='\n')
-        print ()
-        print ('computed')
-        print ()
-        print(*[
-            f'energy: {self.gene.energy}', 
-            f'deadliness: {self.gene.deadliness}', 
-            f'speed: {self.gene.speed}', 
-            f'stamina: {self.gene.stamina}', 
-            f'fortitude: {self.gene.fortitude}', 
-            f'intelligence: {self.gene.intelligence}', 
-            f'longevity: {self.gene.longevity}', 
-            f'fertility: {self.gene.fertility}', 
-            f'sight range: {self.gene.sightRange}', 
-            f'field of view: {self.gene.sightField}', 
-            f'meat eating: {self.gene.meatEating}', 
-            f'plant eating: {self.gene.plantEating}'
-        ], sep='\n')
+        gene1 = Genome(
+            deadliness=1, 
+            speed=1, 
+            stamina=1, 
+            fortitude=1, 
+            intelligence=1, 
+            longevity=1, 
+            fertility=1, 
+            meateating=1, 
+            planteating=1, 
+            sightrange=1, 
+            sightfield=1,
+            mindStr='11111111111111111111111111111111111111'
+                    
+        )
+        gene2 = Genome(
+            deadliness=9, 
+            speed=9, 
+            stamina=9, 
+            fortitude=9, 
+            intelligence=9, 
+            longevity=9, 
+            fertility=9, 
+            meateating=9, 
+            planteating=9, 
+            sightrange=9, 
+            sightfield=9,
+            mindStr='99999999999999999999999999999999999999'
+        )
+        gene3=Genome.merge(gene1, gene2)
+        gene3.printRawStats()
+        print(gene3.mindStr)
+
+        [self.assertTrue(char in [1, 9])
+            for char in [
+                v.value for v in gene3.stats.values()
+            ] + 
+            [
+                int(c) for c in gene3.mindStr
+            ]
+        ]
 
 testGenome().test()
