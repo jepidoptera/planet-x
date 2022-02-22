@@ -22,8 +22,13 @@ class testCreature(unittest.TestCase):
         carnivore_action=carnivore.think()
         self.assertTrue(herbivore_action == 'action_flee')
         self.assertTrue(carnivore_action == 'action_attack')
-        herbivore.animate()
-        self.assertTrue(herbivore.location.index in [64, 65])
+        for n in range(5):
+            herbivore.think()
+            herbivore.animate()
+        self.assertTrue(Map.getDistance(herbivore.location, carnivore.location) > 5)
+        
+        herbivore.location=self.map.nodes[74]
+
         for n in range(5):
             carnivore.animate()
 
@@ -39,10 +44,10 @@ class testCreature(unittest.TestCase):
         self.map.clear()
         herbivore = templates.herbivore(self.map.nodes[74], energy=100)
         herbivore.direction = 2
-        self.map.nodes[114].resource=Resource(ResourceType.grass, 1) 
+        self.map.nodes[114].resource=Resource(ResourceType.grass, 100) 
         herbivore_action=herbivore.think()
         self.assertTrue(herbivore_action == 'action_eat')
-        for n in range(10):
+        for n in range(5):
             herbivore.animate()
         self.assertTrue (herbivore.energy > 100)
 
@@ -56,6 +61,9 @@ class testCreature(unittest.TestCase):
         creature2_action=creature2.think()
         self.assertTrue(creature1_action == 'action_mate')
         self.assertTrue(creature2_action == 'action_mate')
+        for n in range(5):
+            creature1.animate()
+        self.assertTrue(type(creature1.offspring)==Creature)
 
     # 0    20    40    60    80    100    120    140    160    180
     #   10    30    50    70    90    110    130    150    170    190
