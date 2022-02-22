@@ -23,7 +23,6 @@ def herbivore(location: MapNode, energy: float=100) -> Creature:
         Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
     ]
     return Creature(location, Genome(
-        energy=energy, 
         deadliness=0, 
         speed=3, 
         stamina=3, 
@@ -59,10 +58,9 @@ def carnivore(location: MapNode, energy: float=100) -> Creature:
         Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.2),
     ]
     return Creature(location,  Genome(
-        energy=energy, 
         deadliness=4, 
         speed=4, 
-        stamina=3, 
+        stamina=8, 
         fortitude=3, 
         intelligence=60, 
         longevity=9, 
