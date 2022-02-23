@@ -42,7 +42,7 @@ class Speed(Stat):
 
 class Longevity(Stat):
     min = 1
-    max = 1000 # imortality would require infinite energy tho
+    max = INFINITY # imortality would require infinite energy tho
     metacost = 1.0
     growcost = 1.0
 
@@ -87,9 +87,9 @@ class Stamina(Stat):
 class Genome():
     mutationRate=0.5
     mutations=0
-    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str, speciesName: str=''):
+    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, speciesName: str=''):
 
-        # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
+        # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
 
         self.stats:dict[str: Stat] = {
             "deadliness": Deadliness(value=deadliness),
@@ -121,7 +121,7 @@ class Genome():
 
         self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
         
-        self.mindStr = mindStr
+        self.brain = brain
         
         self.age = 0
         self.speciesName = speciesName
@@ -148,7 +148,7 @@ class Genome():
 
     @property
     def fertility(self):
-        return self._fertility ** 2 / (self._fertility + self._longevity / 3)
+        return self._fertility
 
     @property
     def meatEating(self) -> float:
@@ -203,7 +203,7 @@ class Genome():
             brainMutation = int(random.random() * 2)
 
             if (brainMutation):
-                self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
+                self.brain = modString(self.brain, random.choice('1234567890abcdef'), int(random.random() * len(self.brain)))
             else:
                 self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
@@ -235,13 +235,13 @@ def randomGenome():
         stamina = int(random.random() * (Stamina.max) + 1),
         fortitude = int(random.random() * (Fortitude.max) + 1),
         intelligence = int(random.random() * (Intelligence.max - Intelligence.min + 1) + Intelligence.min),
-        longevity =int(random.random() * (Longevity.max) + 1),
+        longevity =int(random.random() * (50) + 1),
         fertility = int(random.random() * (Fertility.max + 1)),
         meateating = int(random.random() * (MeatEating.max + 1)),
         planteating = int(random.random() * (PlantEating.max + 1)),
         sightrange = int(random.random() * (SightRange.max + 1)),
         sightfield = int(random.random() * (SightField.max) + 1),
-        mindStr = "".join(random.choice('abcdef1234567890') for i in range(1028)),
+        brain = "".join(random.choice('abcdef1234567890') for i in range(128)),
         speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(10)])
     )
 
@@ -258,7 +258,7 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        mindStr=mergeString(*[arg.mindStr for arg in args], chunk=8),
+        brain=mergeString(*[arg.brain for arg in args], chunk=8),
         speciesName=mergeString(*[arg.speciesName for arg in args], chunk=1)
     )
     return merged
