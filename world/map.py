@@ -16,13 +16,16 @@ class Resource():
         self.value = value
 
 class MapNode():
-    def __init__(self, index: int, neighbors: list, x: float=0.0, y: float=0.0, z: float=0.0):
+    def __init__(self, index: int=0, neighbors: list=[], x: float=0.0, y: float=0.0, z: float=0.0):
         self.index = index
         self.neighbors = neighbors
         self.occupant: any = None
         self.resource: Resource = None
         self.obstruction: any = None
         self.visionTree = []
+        self.x = x
+        self.y = y
+        self.z = z
 
 def calcVisionTree(startingNode: MapNode, distance: int):
     mergedDict = {n:True for n in startingNode.neighbors + [startingNode]}
@@ -75,7 +78,8 @@ class Map():
             node.y = i % mapHeight + (i/mapHeight % 2) / 2
             node.z = 0
             for _, n in enumerate(neighborIndexes):
-                node.neighbors.append(self.nodes[(i + n) % self.totalNodes])
+                if (i + n) >= 0 and (i + n) < len(self.nodes):
+                    node.neighbors.append(self.nodes[(i + n) % self.totalNodes])
 
         for node in self.nodes:
             node.visionTree = calcVisionTree(node, 7)
