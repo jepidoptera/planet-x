@@ -16,7 +16,8 @@ class testGenome(unittest.TestCase):
             planteating=1, 
             sightrange=1, 
             sightfield=1,
-            mindStr='11111111111111111111111111111111111111'
+            mindStr='11111111111111111111111111111111111111',
+            speciesName='11111111'
                     
         )
         gene2 = Genome(
@@ -31,7 +32,8 @@ class testGenome(unittest.TestCase):
             planteating=9, 
             sightrange=9, 
             sightfield=9,
-            mindStr='99999999999999999999999999999999999999'
+            mindStr='99999999999999999999999999999999999999',
+            speciesName='99999999'
         )
         gene3=Genome.merge(gene1, gene2)
         gene3.printRawStats()
@@ -43,6 +45,9 @@ class testGenome(unittest.TestCase):
             ] + 
             [
                 int(c) for c in gene3.mindStr
+            ] +
+            [
+                int(c) for c in gene3.speciesName
             ]
         ]
 
