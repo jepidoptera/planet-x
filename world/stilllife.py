@@ -3,6 +3,7 @@ from world.map import *
 from creatures.creature import *
 from creatures.genome import *
 import random
+import json
 # from curses import wrapper
 # import curses
 
@@ -28,10 +29,25 @@ def main():
     
     over=False
     steps=0
+    # creatures: set[Creature] = (
+    #     [templates.herbivore(random.choice(map.nodes)) for n in range(100)] 
+    #     + [templates.carnivore(random.choice(map.nodes)) for n in range(10)]
+    # )
+    herb = templates.herbivore()
+    carn = templates.carnivore()
+    # now add some random in the mix
+    # 3/4 prefab, 1/4 rando
     creatures: set[Creature] = (
-        [templates.herbivore(random.choice(map.nodes)) for n in range(100)] 
-        + [templates.carnivore(random.choice(map.nodes)) for n in range(10)]
+        [templates.cross(herb, templates.cross(herb, templates.rando()), random.choice(map.nodes)) for n in range(100)] 
+        + [templates.cross(carn, templates.cross(carn, templates.rando()), random.choice(map.nodes)) for n in range(100)]
     )
+    # they have served their purpose
+    del(herb)
+    del(carn)
+
+    for creature in creatures:
+        creature.age = random.random() * 100 * creature.longevity
+
     # creatures = [Creature(random.choice(map.nodes), randomGenome(), randomGenome(), energy=100) for n in range(100)]
     thoughtThreshold = 60
     moveThreshold = 60
@@ -53,7 +69,7 @@ def main():
                 creature.moveTimer -= moveThreshold
                 creature.animate()
 
-            if not creature.dead: aliveCreatures.append(creature)
+            if not creature.dead: aliveCreatures.add(creature)
             if creature.offspring: 
                 aliveCreatures.add(creature.offspring)
                 creature.offSpring=None
@@ -63,6 +79,7 @@ def main():
         creatures = aliveCreatures
         # print (f'creature 0 at: {creatures[0].location.x, creatures[0].location.y}')
 
+
         # stdscr.addstr(0, 0, str(steps))
         # stdscr.refresh()
         # inKey=stdscr.getkey()
@@ -70,15 +87,24 @@ def main():
 
         if steps % 10 == 0:
             # count surviving species
+            print (f'steps: {steps}')
             species={}
             for creature in creatures:
                 if not creature.speciesName in species:
                     species[creature.speciesName]=0
                 species[creature.speciesName] += 1
 
-            print()
-            print (f'steps: {steps}')
-            print (*[f'{species}: {number}' for i, (species, number) in enumerate(species.items())], sep='\n')
+            topSpecies = [(name, number) for i, (name, number) in enumerate(species.items())]
+            topSpecies.sort(key=lambda x: -x[1])
+            for y in range(3):
+                print(f'{topSpecies[y][0]}: {topSpecies[y][1]}')
+            # print()
+            # print (*[f'{species}: {number}' for i, (species, number) in enumerate(species.items())], sep='\n')
 # wrapper(main)
 
+def save(creatures: set[Creature], filename: str):
+    with open(filename, 'w') as file:
+        json.dump([creature.toJson() for creature in creatures], file, indent=4)
+
 main()
+
