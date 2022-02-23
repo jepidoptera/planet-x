@@ -116,7 +116,7 @@ class Creature():
         self.sightRange = int((genome1.sightRange + genome2.sightRange)/2)
         self.sightField = int((genome1.sightField + genome2.sightField)/2)
         self.size = (genome1.size.value + genome2.size.value)/2
-        self.mindStr = mergeString(genome1.mindStr, genome2.mindStr, chunk=8)
+        self.brain = mergeString(genome1.brain, genome2.brain, chunk=8)
         self.speciesName=mergeString(*[g.speciesName for g in self.genome])
 
         self.age = 0
@@ -135,7 +135,7 @@ class Creature():
         # memory needs to be specific to each creature, though
         self.memNeurons:list[Neuron] = [MemNeuron(False, name=f'memory_{n}') for n in range(8)]
         self.allNeurons:list[Neuron] = self.creatureNeurons + self.selfNeurons + self.envNeurons + self.memNeurons + self.relayNeurons + self.actionNeurons
-        self.unpackGenome(self.mindStr)
+        self.unpackGenome(self.brain)
 
         self.processStimulus('birth')
         return
@@ -197,6 +197,9 @@ class Creature():
         return self.senseAxons + self.memoryAxons + self.relayAxons + self.actionAxons
 
     def animate(self):
+        if self.speciesName == 'tigerwolf':
+            er = 1
+
         if self.dead: return 'dead'
 
         if self.health < self.fortitude:
@@ -206,7 +209,7 @@ class Creature():
         if self.energy < 0: 
             self.health += self.energy
             self.energy = 0
-        self.age += .01
+        self.age += 1
 
         if self.age > self.longevity * 100:
             self.die()
@@ -317,6 +320,9 @@ class Creature():
         self.dead=True
 
     def think(self) -> str:
+        if self.speciesName == 'tigerwolf':
+            er = 1
+        
         options = self.processEnvironment(self.getVisionRanges())
         # exhaustion
         options.append(ActionOption(self.rest, None, self.sprintMoves / self.stamina, netIndex['action_rest']))
@@ -354,7 +360,7 @@ class Creature():
         commonRange = range(min(len(self.speciesName), len(other.speciesName)))
         increment = 1/len(commonRange)
         for c in commonRange:
-            if self.mindStr[c] == other.mindStr[c]: similarity += increment
+            if self.brain[c] == other.brain[c]: similarity += increment
         return similarity
 
     def clearInputs(self):
@@ -423,12 +429,66 @@ class Creature():
         print('intelligence: ', self.intelligence)
         print('sight range: ', self.sightRange)
         print('field of view: ', self.sightField)
-        print('brain dna: ', self.mindStr)
+        print('brain dna: ', self.brain)
 
         print('age: ', self.age)
         print('health: ', self.health)
         print('energy: ', self.energy)
         print(f'location x:{self.location.x}, y:{self.location.y}')
+
+    def toJson(self) -> dict:
+        return {
+            'genomes': [{
+                'deadliness': self.genome[0]._deadliness,
+                'speed': self.genome[0]._speed,
+                'stamina': self.genome[0]._stamina,
+                'fortitude': self.genome[0]._fortitude,
+                'intelligence': self.genome[0]._intelligence,
+                'longevity': self.genome[0]._longevity,
+                'fertility': self.genome[0]._fertility,
+                'meateating': self.genome[0]._meateating,
+                'planteating': self.genome[0]._planteating,
+                'sightrange': self.genome[0]._sightrange,
+                'sightfield': self.genome[0]._sightfield,
+                'brain': self.genome[0].brain,
+                'speciesName': self.genome[0].speciesName
+            },
+            {
+                'deadliness': self.genome[1]._deadliness,
+                'speed': self.genome[1]._speed,
+                'stamina': self.genome[1]._stamina,
+                'fortitude': self.genome[1]._fortitude,
+                'intelligence': self.genome[1]._intelligence,
+                'longevity': self.genome[1]._longevity,
+                'fertility': self.genome[1]._fertility,
+                'meateating': self.genome[1]._meateating,
+                'planteating': self.genome[1]._planteating,
+                'sightrange': self.genome[1]._sightrange,
+                'sightfield': self.genome[1]._sightfield,
+                'brain': self.genome[1].brain,
+                'speciesName': self.genome[1].speciesName
+            }],
+            'location': self.location.index
+        }
+
+def fromJson(j:dict) -> Creature:
+    return Creature(j['location'], *[Genome(
+        deadliness=genome['deadliness'],
+        speed=genome['speed'],
+        stamina=genome['stamina'],
+        fortitude=genome['fortitude'],
+        intelligence=genome['intelligence'],
+        longevity=genome['longevity'],
+        fertility=genome['fertility'],
+        meateating=genome['meateating'],
+        planteating=genome['planteating'],
+        sightrange=genome['sightrange'],
+        sightfield=genome['sightfield'],
+        brain=genome['brain'],
+        speciesName=genome['speciesName']
+    ) for genome in j['genomes']])
+
+Creature.fromJson=staticmethod(fromJson)
 
 Creature.creatureNeurons=list[Neuron]([
     Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: other.deadliness - self.deadliness),
@@ -482,8 +542,3 @@ Creature.allNeurons=list[Neuron](
     Creature.actionNeurons
 )
 netIndex['lock']=True
-
-if __name__ == "__main__":
-    print("creature.py is main file")
-#     map = Map(20, 14)
-#     c = Creature(map, map.nodes[150], randomGenome(), 100.0)
