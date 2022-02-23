@@ -87,7 +87,7 @@ class Stamina(Stat):
 class Genome():
     mutationRate=0.5
     mutations=0
-    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, speciesName: str=''):
+    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, speciesName: str='', mutations: int=0):
 
         # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
 
@@ -247,6 +247,7 @@ def randomGenome():
 
 def merge(*args: Genome) -> Genome:
     merged = Genome(
+        mutations=max(*[g.mutaions for g in args]),
         deadliness=random.choice([g.deadliness for g in args]),
         speed=random.choice([g._speed for g in args]),
         stamina=random.choice([g._stamina for g in args]),
@@ -258,8 +259,8 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        brain=mergeString(*[arg.brain for arg in args], chunk=8),
-        speciesName=mergeString(*[arg.speciesName for arg in args], chunk=1)
+        brain=mergeString(*[g.brain for g in args], chunk=8),
+        speciesName=mergeString(*[g.speciesName for g in args], chunk=1)
     )
     return merged
 def mergeString(*args: str, chunk: int=1) -> str:
