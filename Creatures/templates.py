@@ -16,7 +16,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
         Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
         Axon(netIndex['self_energy'], netIndex['action_eat'], -0.005),
         Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
-        Axon(netIndex['self_energy'], netIndex['relay_7'], -0.02),
+        Axon(netIndex['self_energy'], netIndex['relay_7'], -0.01),
         Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.5),
         Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
         Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
@@ -34,7 +34,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
         planteating=7, 
         sightrange=4, 
         sightfield=3, 
-        mindStr=axonsToHex(herbivore_mind),
+        brain=axonsToHex(herbivore_mind),
         speciesName='deersheep'
     ), energy=100)
 
@@ -65,18 +65,21 @@ def carnivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
         stamina=8, 
         fortitude=3, 
         intelligence=30, 
-        longevity=9, 
+        longevity=10, 
         fertility=6, 
         meateating=7, 
         planteating=0, 
         sightrange=7, 
         sightfield=2, 
-        mindStr=axonsToHex(carnivore_mind),
+        brain=axonsToHex(carnivore_mind),
         speciesName='tigerwolf'
     ), energy=100)
 
-def cross(creature1, creature2):
-    return Creature(creature1.location, merge(*creature1.genome), merge(*creature2.genome))
+def rando(location: MapNode=MapNode(), energy: float=100) -> Creature:
+    return Creature(location, randomGenome(), randomGenome(), energy)
+
+def cross(creature1, creature2, location: MapNode=MapNode()):
+    return Creature(location, merge(*creature1.genome), merge(*creature2.genome))
 
 # 0    20    40    60    80    100    120    140    160    180
 #   10    30    50    70    90    110    130    150    170    190
