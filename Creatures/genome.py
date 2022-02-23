@@ -42,14 +42,14 @@ class Speed(Stat):
 
 class Longevity(Stat):
     min = 1
-    max = INFINITY # imortality would require infinite energy tho
+    max = 1000 # imortality would require infinite energy tho
     metacost = 1.0
     growcost = 1.0
 
 class Intelligence(Stat):
     min = 10
     max = 60
-    metacost = 0.5
+    metacost = 0.3
     growcost = 0.1
 
 class MeatEating(Stat):
@@ -87,7 +87,7 @@ class Stamina(Stat):
 class Genome():
     mutationRate=0.5
     mutations=0
-    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str):
+    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, mindStr: str, speciesName: str=''):
 
         # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,mindStr='345979023qr79fa70450b0734ec3098e90283b')
 
@@ -124,6 +124,7 @@ class Genome():
         self.mindStr = mindStr
         
         self.age = 0
+        self.speciesName = speciesName
         # *size
         # *deadliness
         # *speed
@@ -190,12 +191,16 @@ class Genome():
         return self._longevity
 
     def mutate(self):
-        if random.random() < self.mutationRate: 
-            self.mutations += 1
-            brainMutation = int(random.random() * 2)
+        def modString(string: str, char: chr, position: int) -> str:
+            return string[:position] + char + string[position+1:]
 
-            def modString(string, char, position):
-                return string[:position] + char + string[position+1:]
+        mutations=0
+        while self.mutationRate*0.666 > random.random()*(mutations + 1):
+            self.mutations += 1
+            if self.mutations % 10 == 0:
+                self.speciesName=modString(self.speciesName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random()*len(self.speciesName)))
+
+            brainMutation = int(random.random() * 2)
 
             if (brainMutation):
                 self.mindStr = modString(self.mindStr, random.choice('1234567890abcdef'), int(random.random() * len(self.mindStr)))
@@ -236,7 +241,8 @@ def randomGenome():
         planteating = int(random.random() * (PlantEating.max + 1)),
         sightrange = int(random.random() * (SightRange.max + 1)),
         sightfield = int(random.random() * (SightField.max) + 1),
-        mindStr = "".join(random.choice('abcdef1234567890') for i in range(1028))
+        mindStr = "".join(random.choice('abcdef1234567890') for i in range(1028)),
+        speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(10)])
     )
 
 def merge(*args: Genome) -> Genome:
@@ -252,15 +258,47 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        mindStr=mergeMinds(*[arg.mindStr for arg in args]),
+        mindStr=mergeString(*[arg.mindStr for arg in args], chunk=8),
+        speciesName=mergeString(*[arg.speciesName for arg in args], chunk=1)
     )
     return merged
-def mergeMinds(*args: str) -> str:
-    mindStr=''
-    for n in range(int(max(*[len(arg) for arg in args])/8)):
-        genes=[arg[n*8:(n+1)*8] if len(arg) >= n*8 else '' for arg in args]
-        mindStr += random.choice(genes)
-    return mindStr
+def mergeString(*args: str, chunk: int=1) -> str:
+    mergeStr=''
+    for n in range(int(max(*[len(arg) for arg in args])/chunk)):
+        genes=[arg[n*chunk:(n+1)*chunk] if len(arg) >= n*chunk else '' for arg in args]
+        mergeStr += random.choice(genes)
+    return mergeStr
 
 Genome.merge=staticmethod(merge)
 Genome.randomGenome=staticmethod(randomGenome)
+
+# in search of a function that will repeat an average of x times,
+# but always has a chance of repeating 0 times.
+
+candidates=[
+    lambda rate, mutations: random.random()*rate*1.5 > random.random()*(mutations + 1),
+    lambda rate, mutations: random.random()*(mutations + 1) < rate,
+    lambda rate, mutations: rate**(mutations+1) > random.random()*(rate+1)**(mutations + 1)*(1 + (mutations*rate) / (mutations * rate + 1))
+    # 2/3, 4/9, 8/27
+]
+def avgMutations(rate, f):
+    avg=0
+    f=candidates[f]
+    for _ in range(1000):
+        mutations=0
+        while f(rate, mutations):
+            mutations += 1
+        avg += mutations
+    return avg / 1000
+
+def convergence(x):
+    s = 0
+    y = 1
+    for _ in range(1000):
+        y *= x/(x+1)
+        s += y
+    return s
+
+def headToHead():
+    for n in range(len(candidates)):
+        print(f'function {n + 1}: {[avgMutations(i+1, n) for i in range(5)]}')
