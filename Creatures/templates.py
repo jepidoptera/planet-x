@@ -7,10 +7,10 @@ def axonsToHex(axons: list[Axon]):
 def randomAxon(): 
     return ''.join(random.choice('abcdef1234567890') for n in range(8))
 
-def herbivore(location: MapNode, energy: float=100) -> Creature:
+def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
     herbivore_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
         Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
         Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
@@ -27,17 +27,18 @@ def herbivore(location: MapNode, energy: float=100) -> Creature:
         speed=3, 
         stamina=3, 
         fortitude=2, 
-        intelligence=60, 
+        intelligence=20, 
         longevity=9, 
         fertility=9, 
         meateating=0, 
         planteating=7, 
         sightrange=4, 
         sightfield=3, 
-        mindStr=axonsToHex(herbivore_mind)
+        mindStr=axonsToHex(herbivore_mind),
+        speciesName='deersheep'
     ), energy=100)
 
-def carnivore(location: MapNode, energy: float=100) -> Creature:
+def carnivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
     carnivore_mind = [
         # attack creatures less deadly than self
         Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.5),
@@ -54,6 +55,7 @@ def carnivore(location: MapNode, energy: float=100) -> Creature:
         Axon(netIndex['memory_7'], netIndex['action_eat'], 0.5),
         Axon(netIndex['memory_7'], netIndex['action_attack'], 0.1),
         Axon(netIndex['memory_7'], netIndex['action_wander'], 0.05),
+        Axon(netIndex['memory_7'], netIndex['action_mate'], -1.0),
         Axon(netIndex['self_energy'], netIndex['memory_7'], -0.05),
         Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.2),
     ]
@@ -62,16 +64,19 @@ def carnivore(location: MapNode, energy: float=100) -> Creature:
         speed=4, 
         stamina=8, 
         fortitude=3, 
-        intelligence=60, 
+        intelligence=30, 
         longevity=9, 
         fertility=6, 
         meateating=7, 
         planteating=0, 
         sightrange=7, 
         sightfield=2, 
-        mindStr=axonsToHex(carnivore_mind)
+        mindStr=axonsToHex(carnivore_mind),
+        speciesName='tigerwolf'
     ), energy=100)
 
+def cross(creature1, creature2):
+    return Creature(creature1.location, merge(*creature1.genome), merge(*creature2.genome))
 
 # 0    20    40    60    80    100    120    140    160    180
 #   10    30    50    70    90    110    130    150    170    190
