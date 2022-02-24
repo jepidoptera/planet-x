@@ -247,7 +247,7 @@ def randomGenome():
 
 def merge(*args: Genome) -> Genome:
     merged = Genome(
-        mutations=max(*[g.mutaions for g in args]),
+        mutations=max(*[g.mutations for g in args]),
         deadliness=random.choice([g.deadliness for g in args]),
         speed=random.choice([g._speed for g in args]),
         stamina=random.choice([g._stamina for g in args]),
