@@ -107,7 +107,7 @@ class Creature():
         ):
 
         if not genome2: genome2=genome1
-        self.dead=False
+        self._dead=False
         self._location = location
         location.occupant = self
         self.path=[]
@@ -175,6 +175,17 @@ class Creature():
         if self.health <= 0:
             self.die()
 
+    @property
+    def dead(self) -> bool:
+        return self._dead
+
+    @dead.setter
+    def dead(self, value):
+        if value:
+            self.die()
+            return True
+        return False
+
     def fromHex(self, hexcode) -> Axon:
         input = int(hexcode[:2], 16) % len(self.allNeurons)
         output = int(hexcode[2:4], 16) % len(self.allNeurons)
@@ -209,7 +220,7 @@ class Creature():
         if self.speciesName == 'tigerwolf':
             er = 1
 
-        if self.dead: return 'dead'
+        if self._dead: return 'dead'
 
         # heal
         if self.health < self.fortitude:
@@ -246,6 +257,7 @@ class Creature():
 
         elif self.mate and self.mate.location in self.location.neighbors:
             if self.energy > self.size:
+                self.energy -= self.size
                 self.energy /= 2
                 self.fertility -= 1
                 self.offspring=Creature(
@@ -321,7 +333,7 @@ class Creature():
     def die(self):
         self.location.resource=Resource(ResourceType.meat, self.energy + self.size)
         self.location.occupant=None
-        self.dead=True
+        self._dead=True
 
     def think(self) -> str:
         if self.speciesName == 'tigerwolf':
