@@ -96,7 +96,16 @@ class Creature():
     relayAxons: set[Axon]
     actionAxons: set[Axon]
 
-    def __init__(self, location:MapNode, genome1:Genome, genome2:Genome=None, energy: float=100):
+    def __init__(self, 
+            location: MapNode, 
+            genome1: Genome, 
+            genome2: Genome=None, 
+            energy: float=100, 
+            speciesName: str='', 
+            brain: str='',
+            age: int=0
+        ):
+
         if not genome2: genome2=genome1
         self.dead=False
         self._location = location
@@ -111,15 +120,15 @@ class Creature():
         self.longevity = (genome1.longevity + genome2.longevity)/2
         self.stamina = (genome1.stamina + genome2.stamina)/2
         self.intelligence = (genome1.intelligence + genome2.intelligence)/2
-        self.meatEating = (genome1.meatEating + genome2.meatEating)/2
-        self.plantEating = (genome1.plantEating + genome2.plantEating)/2
+        self.meateating = (genome1.meatEating + genome2.meatEating)/2
+        self.planteating = (genome1.plantEating + genome2.plantEating)/2
         self.sightRange = int((genome1.sightRange + genome2.sightRange)/2)
         self.sightField = int((genome1.sightField + genome2.sightField)/2)
         self.size = (genome1.size.value + genome2.size.value)/2
-        self.brain = mergeString(genome1.brain, genome2.brain, chunk=8)
-        self.speciesName=mergeString(*[g.speciesName for g in self.genome])
+        self.brain = brain or mergeString(genome1.brain, genome2.brain, chunk=8)
+        self.speciesName=speciesName or mergeString(*[g.speciesName for g in self.genome])
 
-        self.age = 0
+        self.age = age
         self._health = self.fortitude
         self.energy = energy
         self.sprintMoves = 0
@@ -202,31 +211,26 @@ class Creature():
 
         if self.dead: return 'dead'
 
+        # heal
         if self.health < self.fortitude:
-            self.health += self.fortitude/1000
-            self.energy -= self.fortitude/1000
-        self.energy -= self.metabolism
+            self.health += self.fortitude/100
+            self.energy -= self.fortitude/100
         if self.energy < 0: 
             self.health += self.energy
             self.energy = 0
-        self.age += 1
-
-        if self.age > self.longevity * 100:
-            self.die()
-            return 'action_die'
 
         if self.food and self.location.resource == self.food:
             bitesize=1
             energyValue=0
             if self.food.type == ResourceType.meat:
-                bitesize=min(self.meatEating, self.food.value)
-                energyValue=self.meatEating*bitesize/7
+                bitesize=min(self.meateating, self.food.value)
+                energyValue=self.meateating*bitesize/7
             elif self.food.type == ResourceType.grass:
-                bitesize=min(self.plantEating, self.food.value)
-                energyValue=self.plantEating*bitesize/7
+                bitesize=min(self.planteating, self.food.value)
+                energyValue=self.planteating*bitesize/7
             elif self.food.type == ResourceType.fruit:
-                bitesize=min(self.plantEating, self.food.value)
-                energyValue=self.plantEating*bitesize/7
+                bitesize=min(self.planteating, self.food.value)
+                energyValue=self.planteating*bitesize/7
             self.food.value -= bitesize
             self.energy += energyValue
             # all gone
@@ -424,8 +428,8 @@ class Creature():
         print('speed: ', self.speed)
         print('fortitude: ', self.fortitude)
         print('stamina: ', self.stamina)
-        print('meat eating: ', self.meatEating)
-        print('plant eating: ', self.plantEating)
+        print('meat eating: ', self.meateating)
+        print('plant eating: ', self.planteating)
         print('intelligence: ', self.intelligence)
         print('sight range: ', self.sightRange)
         print('field of view: ', self.sightField)
@@ -439,54 +443,51 @@ class Creature():
     def toJson(self) -> dict:
         return {
             'genomes': [{
-                'deadliness': self.genome[0]._deadliness,
-                'speed': self.genome[0]._speed,
-                'stamina': self.genome[0]._stamina,
-                'fortitude': self.genome[0]._fortitude,
-                'intelligence': self.genome[0]._intelligence,
-                'longevity': self.genome[0]._longevity,
-                'fertility': self.genome[0]._fertility,
-                'meateating': self.genome[0]._meateating,
-                'planteating': self.genome[0]._planteating,
-                'sightrange': self.genome[0]._sightrange,
-                'sightfield': self.genome[0]._sightfield,
-                'brain': self.genome[0].brain,
-                'speciesName': self.genome[0].speciesName
-            },
-            {
-                'deadliness': self.genome[1]._deadliness,
-                'speed': self.genome[1]._speed,
-                'stamina': self.genome[1]._stamina,
-                'fortitude': self.genome[1]._fortitude,
-                'intelligence': self.genome[1]._intelligence,
-                'longevity': self.genome[1]._longevity,
-                'fertility': self.genome[1]._fertility,
-                'meateating': self.genome[1]._meateating,
-                'planteating': self.genome[1]._planteating,
-                'sightrange': self.genome[1]._sightrange,
-                'sightfield': self.genome[1]._sightfield,
-                'brain': self.genome[1].brain,
-                'speciesName': self.genome[1].speciesName
-            }],
-            'location': self.location.index
+                'mutations': self.genome[n].mutations,
+                'deadliness': self.genome[n]._deadliness,
+                'speed': self.genome[n]._speed,
+                'stamina': self.genome[n]._stamina,
+                'fortitude': self.genome[n]._fortitude,
+                'intelligence': self.genome[n]._intelligence,
+                'longevity': self.genome[n]._longevity,
+                'fertility': self.genome[n]._fertility,
+                'meateating': self.genome[n]._meateating,
+                'planteating': self.genome[n]._planteating,
+                'sightrange': self.genome[n]._sightrange,
+                'sightfield': self.genome[n]._sightfield,
+                'brain': self.genome[n].brain,
+                'speciesName': self.genome[n].speciesName
+            } for n in range(len(self.genome))],
+            'age': self.age,
+            'brain': self.brain,
+            'energy': self.energy,
+            'location': self.location.index,
+            'speciesName': self.speciesName
         }
 
-def fromJson(j:dict) -> Creature:
-    return Creature(j['location'], *[Genome(
-        deadliness=genome['deadliness'],
-        speed=genome['speed'],
-        stamina=genome['stamina'],
-        fortitude=genome['fortitude'],
-        intelligence=genome['intelligence'],
-        longevity=genome['longevity'],
-        fertility=genome['fertility'],
-        meateating=genome['meateating'],
-        planteating=genome['planteating'],
-        sightrange=genome['sightrange'],
-        sightfield=genome['sightfield'],
-        brain=genome['brain'],
-        speciesName=genome['speciesName']
-    ) for genome in j['genomes']])
+def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
+    return Creature(
+        location, *[Genome(
+            mutations=genome['mutations'],
+            deadliness=genome['deadliness'],
+            speed=genome['speed'],
+            stamina=genome['stamina'],
+            fortitude=genome['fortitude'],
+            intelligence=genome['intelligence'],
+            longevity=genome['longevity'],
+            fertility=genome['fertility'],
+            meateating=genome['meateating'],
+            planteating=genome['planteating'],
+            sightrange=genome['sightrange'],
+            sightfield=genome['sightfield'],
+            brain=genome['brain'],
+            speciesName=genome['speciesName']
+        ) for genome in j['genomes']], 
+        brain=j['brain'] if 'brain' in j else '',
+        speciesName=j['speciesName'] if 'speciesName' in j else '',
+        energy=float(j['energy']) if 'energy' in j else 100,
+        age=int(j['age']) if 'age' in j else 0
+    )
 
 Creature.fromJson=staticmethod(fromJson)
 
