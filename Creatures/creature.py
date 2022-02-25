@@ -129,11 +129,12 @@ class Creature():
         self.speciesName=speciesName or mergeString(*[g.speciesName for g in self.genome])
 
         self.age = age
+        self.offspringCount=0
         self._health = self.fortitude
         self.energy = energy
         self.sprintMoves = 0
         self._metabolism = (sum([stat.value * stat.metacost for stat in genome1.stats.values()]) +
-            sum([stat.value * stat.metacost for stat in genome2.stats.values()])) / 2000
+            sum([stat.value * stat.metacost for stat in genome2.stats.values()])) / 7000
 
         self.direction=int(random.random() * len(self.location.neighbors))
         self.thinkTimer=int(random.random() * self.intelligence)
@@ -152,7 +153,7 @@ class Creature():
     @property 
     def metabolism(self) -> float:
         # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-        return self._metabolism + self.sprintMoves / self.stamina
+        return self._metabolism*(max(self.sprintMoves, 1)/self.stamina)
 
     @property
     def location(self) -> MapNode:
@@ -215,6 +216,18 @@ class Creature():
                 self.actionAxons.append(axon)
 
         return self.senseAxons + self.memoryAxons + self.relayAxons + self.actionAxons
+
+    def printBrain(genome):
+        # 5ed133900322c000322cd5e50a17ffff171fffff57058348b71dd2a8061f7e780927c00b0b15ffff15274ccc2715ffff445999c4e61b31cf
+        def fromHex(hexcode):
+            input = int(hexcode[:2], 16) % len(Creature.allNeurons)
+            output = int(hexcode[2:4], 16) % len(Creature.allNeurons)
+            factor = int(hexcode[4:8], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
+            return (Creature.allNeurons[input].name, Creature.allNeurons[output].name, factor)
+        
+        for n in range(int(len(genome)/8)):            
+            axon = fromHex(genome[n * 8: (n + 1) * 8])
+            print (f'{axon[0]} -> {axon[1]}: {axon[2]}')
 
     def animate(self):
         if self.speciesName == 'tigerwolf':
@@ -281,7 +294,7 @@ class Creature():
                 self.sprintMoves += 1
 
         else:
-            self.sprintMoves -= 1
+            self.sprintMoves = min(self.sprintMoves - 1, 0)
             
     def seekFood(self, foodLocation: MapNode):
         self.food = foodLocation.resource
@@ -343,7 +356,7 @@ class Creature():
         # exhaustion
         options.append(ActionOption(self.rest, None, self.sprintMoves / self.stamina, netIndex['action_rest']))
         # wandering
-        options.append(ActionOption(self.wander, None, 0.1, netIndex['action_wander']))
+        options.append(ActionOption(self.wander, None, 0.05, netIndex['action_wander']))
         action = max(*options, key=lambda option: option.weight)
         if action.target:
             action.action(self, action.target)
@@ -513,12 +526,15 @@ Creature.creatureNeurons=list[Neuron]([
 ])
 
 Creature.selfNeurons=list[Neuron]([
-    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy),
+    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy * 0.01),
     Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health),
     Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age),
     Neuron(NeuronType.self, name='self_sprints', sense=lambda self: self.sprintMoves),
     Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
-    Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack 
+    Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack
+    Neuron(NeuronType.self, name='self_always', sense=lambda self: True),
+    Neuron(NeuronType.self, name='self_sometimes', sense=lambda self: self.age % 7 == 1), 
+    Neuron(NeuronType.self, name='self_rarely', sense=lambda self: self.age % 77 == 1) 
 ])
 
 Creature.envNeurons=list[Neuron]([
