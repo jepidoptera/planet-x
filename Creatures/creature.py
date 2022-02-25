@@ -312,8 +312,8 @@ class Creature():
 
     def flee(self, other):
         self.fear = other
-        away=max([n for n in self.location.neighbors], key=lambda n: Map.getDistance(n, other.location))
-        self.path=[away]
+        away=Map.findPathAway(self.location, other.location, safeDistance=7)
+        self.path=away
         # vvv saved this old code just to compare with the elegance of this ^^^
         # toOther=Map.findPath(self.location, other.location)
         # self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
@@ -444,6 +444,7 @@ class Creature():
         if type == 'creature':
             netIndex['action_attack'].activation += netIndex['action_eat'].activation
             netIndex['action_eat'].clear()
+            if self.energy < self.size: netIndex['action_mate'].clear()
 
         out = max(*[self.actionNeurons], key=lambda n: n.activation)
         return ActionOption(out.action, target, out.activation * magnitude, out)
