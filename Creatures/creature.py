@@ -103,7 +103,7 @@ class Creature():
             energy: float=100, 
             speciesName: str='', 
             brain: str='',
-            age: int=0
+            age: int=0,
         ):
 
         if not genome2: genome2=genome1
@@ -277,7 +277,8 @@ class Creature():
                     self.location, 
                     Genome.merge(*self.genome).mutate(), 
                     Genome.merge(*self.mate.genome).mutate(), 
-                    energy=self.energy
+                    energy=self.energy,
+                    speciesName=mergeString(self.speciesName, self.mate.speciesName)
                 )
             
         # move along the path
