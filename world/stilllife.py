@@ -1,10 +1,9 @@
 from creatures.creature import Creature
 from world import life
 
-def main():
+def run(loadfile: str=''):
     
     creatures: set[Creature]
-    loadfile = 'species/deetsheep.txt'
     if loadfile:
         creatures = life.loadCreatures(loadfile)
     else:
@@ -19,8 +18,9 @@ def main():
             # count surviving species
             print (f'steps: {steps}')
             species = life.countSpecies(creatures)
-            for y in range(5):
+            print (f'total{len(creatures)}')
+            for y in range((min(5, len(species)))):
                 print(f'{species[y][0]}: {species[y][1]}')
 
-main()
+# main()
 
