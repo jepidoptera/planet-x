@@ -98,43 +98,41 @@ class Creature():
 
     def __init__(self, 
             location: MapNode, 
-            genome1: Genome, 
-            genome2: Genome=None, 
+            genome: list[Genome],
             energy: float=100, 
             speciesName: str='', 
             brain: str='',
             age: int=0,
         ):
 
-        if not genome2: genome2=genome1
         self._dead=False
         self._location = location
         location.occupant = self
         self.path=[]
         
-        self.genome=[genome1, genome2]
-        self.deadliness = (genome1.deadliness + genome2.deadliness)/2
-        self.speed = (genome1.speed + genome2.speed)/2
-        self.fortitude = (genome1.fortitude + genome2.fortitude)/2
-        self.fertility = (genome1.fertility + genome2.fertility)/2
-        self.longevity = (genome1.longevity + genome2.longevity)/2
-        self.stamina = (genome1.stamina + genome2.stamina)/2
-        self.intelligence = (genome1.intelligence + genome2.intelligence)/2
-        self.meateating = (genome1.meatEating + genome2.meatEating)/2
-        self.planteating = (genome1.plantEating + genome2.plantEating)/2
-        self.sightRange = int((genome1.sightRange + genome2.sightRange)/2)
-        self.sightField = int((genome1.sightField + genome2.sightField)/2)
-        self.size = (genome1.size.value + genome2.size.value)/2
-        self.brain = brain or mergeString(genome1.brain, genome2.brain, chunk=8)
-        self.speciesName=speciesName or mergeString(*[g.speciesName for g in self.genome])
+        self.genome=genome if type(genome)==list else [genome, genome]
+        genome=self.genome
+        self.deadliness = sum([g.deadliness for g in genome])/len(genome)
+        self.speed = sum([g.speed for g in genome])/len(genome)
+        self.fortitude = sum([g.fortitude for g in genome])/len(genome)
+        self.fertility = sum([g.fertility for g in genome])/len(genome)
+        self.longevity = sum([g.longevity for g in genome])/len(genome)
+        self.stamina = sum([g.stamina for g in genome])/len(genome)
+        self.intelligence = sum([g.intelligence for g in genome])/len(genome)
+        self.meateating = sum([g.meatEating for g in genome])/len(genome)
+        self.planteating = sum([g.plantEating for g in genome])/len(genome)
+        self.sightRange = int(sum([g.sightRange for g in genome])/len(genome))
+        self.sightField = int(sum([g.sightField for g in genome])/len(genome))
+        self.size = sum([g.size.value for g in genome])/len(genome)
+        self.brain = brain or mergeString(*[g.brain for g in genome], chunk=8)
+        self.speciesName=speciesName or mergeString(*[g.speciesName for g in genome])
 
         self.age = age
         self.offspringCount=0
         self._health = self.fortitude
         self.energy = energy
         self.sprintMoves = 0
-        self._metabolism = (sum([stat.value * stat.metacost for stat in genome1.stats.values()]) +
-            sum([stat.value * stat.metacost for stat in genome2.stats.values()])) / 7000
+        self._metabolism = (sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) for g in genome])) / (3500 * len(genome))
 
         self.direction=int(random.random() * len(self.location.neighbors))
         self.thinkTimer=int(random.random() * self.intelligence)
@@ -229,7 +227,7 @@ class Creature():
             axon = fromHex(genome[n * 8: (n + 1) * 8])
             print (f'{axon[0]} -> {axon[1]}: {axon[2]}')
 
-    def animate(self):
+    def animate(self) -> str:
         if self.speciesName == 'tigerwolf':
             er = 1
 
@@ -275,17 +273,21 @@ class Creature():
                 self.fertility -= 1
                 self.offspring=Creature(
                     self.location, 
-                    Genome.merge(*self.genome).mutate(), 
-                    Genome.merge(*self.mate.genome).mutate(), 
+                    [
+                        Genome.merge(*self.genome).mutate(), 
+                        Genome.merge(*self.mate.genome).mutate()
+                    ], 
                     energy=self.energy,
                     speciesName=mergeString(self.speciesName, self.mate.speciesName)
                 )
+            return 'action_mate'
             
         # move along the path
         elif (self.path):
             nextMove=self.path.pop(0)
             if nextMove.occupant:
                 self.path = []
+                return 'action_blocked'
             else:
                 self.location.occupant = None
                 self.direction=self.location.neighbors.index(nextMove)
@@ -293,9 +295,10 @@ class Creature():
                 self.location.occupant = self
                 self.direction=min(self.direction, len(self.location.neighbors)-1)
                 self.sprintMoves += 1
-
+            return 'action_move'
         else:
             self.sprintMoves = min(self.sprintMoves - 1, 0)
+            return 'action_rest'
             
     def seekFood(self, foodLocation: MapNode):
         self.food = foodLocation.resource
@@ -390,7 +393,7 @@ class Creature():
         commonRange = range(min(len(self.speciesName), len(other.speciesName)))
         increment = 1/len(commonRange)
         for c in commonRange:
-            if self.brain[c] == other.brain[c]: similarity += increment
+            if self.speciesName[c] == other.speciesName[c]: similarity += increment
         return similarity
 
     def clearInputs(self):
