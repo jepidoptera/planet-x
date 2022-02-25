@@ -11,6 +11,7 @@ class testCreature(unittest.TestCase):
         self.scenario_predation()
         self.scenario_herbivory()
         self.scenario_courtship()
+        self.scenario_crossbreed()
 
     def scenario_predation(self):
         self.map.clear()
@@ -80,6 +81,17 @@ class testCreature(unittest.TestCase):
             creature1.animate()
         self.assertTrue(type(creature1.offspring)==Creature)
 
+    def scenario_crossbreed(self):
+        # crossbreed a bunch of shit and see if we get a viable creature
+        creature1=templates.cross(*[templates.rando(), templates.herbivore(), templates.carnivore(), templates.scavenger()])
+        creature2=templates.cross(*[templates.rando(), templates.herbivore(), templates.carnivore(), templates.scavenger()])
+        creature3=templates.cross(creature1, creature2, location=random.choice(self.map.nodes))
+        self.assertTrue(len(creature3.genome) == 2)
+        thought=creature3.think()
+        action=creature3.animate()
+        self.assertTrue(len(creature3.speciesName) >= 8)
+        self.assertTrue(type(thought) == str)
+        self.assertTrue(type(action) == str)
     # 0    20    40    60    80    100    120    140    160    180
     #   10    30    50    70    90    110    130    150    170    190
     # 1    21    41    61    81    101    121    141    161    181
