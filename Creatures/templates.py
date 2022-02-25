@@ -11,13 +11,14 @@ def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
     herbivore_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
+        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
         Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
         Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
-        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.005),
+        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
         Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
         Axon(netIndex['self_energy'], netIndex['relay_7'], -0.01),
-        Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.5),
+        Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
         Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
         Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
         Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
@@ -28,7 +29,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
         stamina=3, 
         fortitude=2, 
         intelligence=20, 
-        longevity=9, 
+        longevity=20, 
         fertility=9, 
         meateating=0, 
         planteating=7, 
@@ -38,34 +39,70 @@ def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
         speciesName='deersheep'
     ), energy=100)
 
+def scavenger(location: MapNode=MapNode(), energy: float=100) -> Creature:
+    herbivore_mind = [
+        Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
+        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
+        Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
+        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
+        Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
+        Axon(netIndex['self_energy'], netIndex['relay_7'], -0.01),
+        Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
+        Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
+        Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
+        Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
+    ]
+    return Creature(location, Genome(
+        deadliness=0, 
+        speed=3, 
+        stamina=3, 
+        fortitude=2, 
+        intelligence=20, 
+        longevity=20, 
+        fertility=9, 
+        meateating=0, 
+        planteating=7, 
+        sightrange=4, 
+        sightfield=3, 
+        brain=axonsToHex(herbivore_mind),
+        speciesName='coyotefox'
+    ), energy=energy)
+
 def carnivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
     carnivore_mind = [
         # attack creatures less deadly than self
-        Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.5),
+        Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -1.0),
         # mate with creatures similar to self
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
         # don't attack creatures similar to self
-        Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
+        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.1),
         # mate with deadly creatures, to sire deadly progeny
         Axon(netIndex['creature_deadliness'], netIndex['action_mate'], 0.1),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
-        Axon(netIndex['self_birth'], netIndex['memory_6'], 1.0),
-        Axon(netIndex['memory_6'], netIndex['memory_7'], 0.55),
-        Axon(netIndex['memory_7'], netIndex['action_eat'], 0.5),
-        Axon(netIndex['memory_7'], netIndex['action_attack'], 0.1),
-        Axon(netIndex['memory_7'], netIndex['action_wander'], 0.05),
-        Axon(netIndex['memory_7'], netIndex['action_mate'], -1.0),
-        Axon(netIndex['self_energy'], netIndex['memory_7'], -0.05),
-        Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.2),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['self_sometimes'], netIndex['action_turnleft'], 0.5),
+        # Axon(netIndex['creature_size'], netIndex['action_attack'], 0.05)
+        # Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
+        # Axon(netIndex['self_birth'], netIndex['memory_6'], 1.0),
+        # Axon(netIndex['memory_6'], netIndex['memory_7'], 0.55),
+        # Axon(netIndex['memory_7'], netIndex['action_eat'], 0.5),
+        # Axon(netIndex['memory_7'], netIndex['action_attack'], 0.1),
+        # Axon(netIndex['memory_7'], netIndex['action_wander'], 0.05),
+        # Axon(netIndex['memory_7'], netIndex['action_mate'], -1.0),
+        # Axon(netIndex['self_energy'], netIndex['memory_7'], -0.05),
+        # Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.2),
     ]
     return Creature(location,  Genome(
         deadliness=4, 
-        speed=4, 
+        speed=8, 
         stamina=8, 
         fortitude=3, 
         intelligence=30, 
-        longevity=10, 
+        longevity=40, 
         fertility=6, 
         meateating=7, 
         planteating=0, 
@@ -73,7 +110,7 @@ def carnivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
         sightfield=2, 
         brain=axonsToHex(carnivore_mind),
         speciesName='tigerwolf'
-    ), energy=100)
+    ), energy=energy)
 
 def rando(location: MapNode=MapNode(), energy: float=100) -> Creature:
     return Creature(location, randomGenome(), randomGenome(), energy)
