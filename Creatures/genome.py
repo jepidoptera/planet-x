@@ -54,7 +54,7 @@ class Intelligence(Stat):
 
 class MeatEating(Stat):
     max = 7
-    metacost = 4.0
+    metacost = 1.0
     growcost = 0.0
 
 class PlantEating(Stat):
@@ -63,8 +63,8 @@ class PlantEating(Stat):
     growcost = 0.0
 
 class Fertility(Stat):
-    max = 7
-    metacost = 1.5
+    max = 10
+    metacost = 4.0
     growcost = 0.0
 
 class SightRange(Stat):
@@ -117,7 +117,7 @@ class Genome():
         self._planteating = self.stats["plant eating"].value
         self._sightrange = self.stats["sight range"].value
         self._sightfield = self.stats["sight field"].value
-        self.stats["sight field"].metacost=self._sightrange/5
+        self.stats["sight field"].metacost=self._sightrange/4
 
         self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
         
@@ -248,6 +248,7 @@ def randomGenome():
     )
 
 def merge(*args: Genome) -> Genome:
+    if len(args) == 1: return args[0]
     merged = Genome(
         mutations=max(*[g.mutations for g in args]),
         deadliness=random.choice([g.deadliness for g in args]),
@@ -266,6 +267,7 @@ def merge(*args: Genome) -> Genome:
     )
     return merged
 def mergeString(*args: str, chunk: int=1) -> str:
+    if len(args) == 1: return args[0]
     mergeStr=''
     for n in range(int(max(*[len(arg) for arg in args])/chunk)):
         genes=[arg[n*chunk:(n+1)*chunk] if len(arg) >= n*chunk else '' for arg in args]
@@ -274,6 +276,7 @@ def mergeString(*args: str, chunk: int=1) -> str:
 
 Genome.merge=staticmethod(merge)
 Genome.randomGenome=staticmethod(randomGenome)
+Genome.mergeString=staticmethod(mergeString)
 
 # in search of a function that will repeat an average of x times,
 # but always has a chance of repeating 0 times.
