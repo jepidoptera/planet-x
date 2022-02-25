@@ -1,5 +1,7 @@
 from enum import Enum
 from math import *
+import random
+
 sign = lambda x: copysign(1, x)
 
 class ResourceType(Enum):
@@ -74,8 +76,8 @@ class Map():
             else:
                 # even row
                 neighborIndexes = [-1, mapHeight - 1, mapHeight, 1, -mapHeight, -mapHeight - 1]
-            node.x = int(i / mapHeight)
-            node.y = i % mapHeight + (i/mapHeight % 2) / 2
+            node.x = i//mapHeight
+            node.y = i % mapHeight + (i//mapHeight % 2)/2
             node.z = 0
             for _, n in enumerate(neighborIndexes):
                 if (i + n) >= 0 and (i + n) < len(self.nodes):
@@ -84,6 +86,12 @@ class Map():
         for node in self.nodes:
             node.visionTree = calcVisionTree(node, 7)
     
+    def populateGrass(self, value: int=10, density: float=0.1):
+        for node in self.nodes:
+            if random.random() < density:
+                node.resource=Resource(ResourceType.grass, value)
+            return self
+
     def print(self):
         for y in range(self.mapHeight):
             print (''.join(["{0}    ".format(y + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
@@ -115,6 +123,50 @@ class Map():
             print(''.join(["{0}    ".format(showVision(y + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
             print(''.join(["  {0}  ".format(showVision(y + self.mapHeight + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
 
+    @staticmethod
+    def findPathAway(startNode: MapNode, fleeFrom:MapNode, safeDistance:int=5):
+        # modified A*
+        maxout=100 # if openlist exceeds this length, return []
+        class nodeOption():
+            def __init__(self, node: MapNode, previous: MapNode=None, pathLength: int=0, distanceTraveled: int=0):
+                self.node = node
+                self.previous=previous
+                self.pathLength = pathLength # estimated total path length
+                self.distanceTraveled = distanceTraveled # distance traveled so far
+
+        openList = [nodeOption(startNode, 0)]
+        closedList = set()
+        while openList:
+            currentNode = min(openList, key=lambda node: node.pathLength)
+            openList.remove(currentNode)
+            closedList.add(currentNode.node.index)
+
+            for neighbor in currentNode.node.neighbors:
+                dist=Map.getDistance(fleeFrom, neighbor)
+                if dist >= safeDistance:
+                    # that'll do
+                    path = [neighbor]
+                    while True:
+                        if currentNode.node == startNode: break
+                        path = [currentNode.node] + path
+                        currentNode = currentNode.previous
+                    return path
+
+                if neighbor.index in closedList or neighbor.obstruction or neighbor.occupant:
+                    continue
+
+                remainingDistance = safeDistance-dist
+                distanceTraveled = currentNode.distanceTraveled + 1
+                pathLength = distanceTraveled + remainingDistance
+                for i, option in enumerate(openList):
+                    if option.node == neighbor:
+                        if option.distanceTraveled > distanceTraveled:
+                            openList[i] = nodeOption(neighbor, currentNode, pathLength, distanceTraveled)
+                        break
+                openList.append(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
+                if len(openList) > maxout: return []
+
+    @staticmethod
     def findPath(startNode: MapNode, endNode: MapNode) -> list[MapNode]:
         # good ol' A* algorithm
         maxout=100
@@ -125,7 +177,7 @@ class Map():
                 self.pathLength = pathLength # estimated total path length
                 self.distanceTraveled = distanceTraveled # distance traveled so far
 
-        openList = [nodeOption(startNode, 0)]
+        openList = set([nodeOption(startNode, 0)])
         closedList = set()
         while openList:
             currentNode = min(openList, key=lambda node: node.pathLength)
@@ -147,22 +199,27 @@ class Map():
                 remainingDistance = Map.getDistance(neighbor, endNode)
                 distanceTraveled = currentNode.distanceTraveled + 1
                 pathLength = distanceTraveled + remainingDistance
-                for i, option in enumerate(openList):
+                for option in openList:
                     if option.node == neighbor:
                         if option.distanceTraveled > distanceTraveled:
-                            openList[i] = nodeOption(neighbor, currentNode, pathLength, distanceTraveled)
+                            openList.remove(option)
+                            openList.add(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
                         break
-                openList.append(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
-                if len(openList) > maxout: return []
+                openList.add(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
+                if len(openList) > maxout: 
+                    return []
 
+    @staticmethod
     def getDistance(a: MapNode, b: MapNode):
-        x0 = a.x-floor(a.y/2)
-        y0 = a.y
-        x1 = b.x-floor(b.y/2)
-        y1 = b.y
-        dx = x1 - x0
-        dy = y1 - y0
-        return max(abs(dx), abs(dy), abs(dx+dy))     
+        # x0 = a.x-a.y
+        # y0 = a.y
+        # x1 = b.x-b.y
+        # y1 = b.y
+        # dx = x1 - x0
+        # dy = y1 - y0
+        dx=abs(a.x - b.x)
+        dy=int(max(abs(a.y - b.y) - dx/2, 0))
+        return dx + dy # max(abs(dx), abs(dy), abs(dx+dy))     
 
     def clear(self):
         for node in self.nodes:
