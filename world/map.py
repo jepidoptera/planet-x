@@ -117,6 +117,7 @@ class Map():
 
     def findPath(startNode: MapNode, endNode: MapNode) -> list[MapNode]:
         # good ol' A* algorithm
+        maxout=100
         class nodeOption():
             def __init__(self, node: MapNode, previous: MapNode=None, pathLength: int=0, distanceTraveled: int=0):
                 self.node = node
@@ -131,17 +132,18 @@ class Map():
             openList.remove(currentNode)
             closedList.add(currentNode.node.index)
 
-            if currentNode.node == endNode:
-                path = []
-                while True:
-                    if currentNode.node == startNode: break
-                    path = [currentNode.node] + path
-                    currentNode = currentNode.previous
-                return path
-
             for neighbor in currentNode.node.neighbors:
-                if neighbor.index in closedList or neighbor.obstruction:
+                if neighbor == endNode:
+                    path = [neighbor]
+                    while True:
+                        if currentNode.node == startNode: break
+                        path = [currentNode.node] + path
+                        currentNode = currentNode.previous
+                    return path
+
+                if neighbor.index in closedList or neighbor.obstruction or neighbor.occupant:
                     continue
+
                 remainingDistance = Map.getDistance(neighbor, endNode)
                 distanceTraveled = currentNode.distanceTraveled + 1
                 pathLength = distanceTraveled + remainingDistance
@@ -151,6 +153,7 @@ class Map():
                             openList[i] = nodeOption(neighbor, currentNode, pathLength, distanceTraveled)
                         break
                 openList.append(nodeOption(neighbor, currentNode, pathLength, distanceTraveled))
+                if len(openList) > maxout: return []
 
     def getDistance(a: MapNode, b: MapNode):
         x0 = a.x-floor(a.y/2)
