@@ -32,7 +32,7 @@ class testCreature(unittest.TestCase):
         for n in range(5):
             carnivore.animate()
 
-        self.assertTrue(herbivore.dead)
+        self.assertTrue(herbivore._dead)
 
         carnivore.think()
         carnivore.animate()
