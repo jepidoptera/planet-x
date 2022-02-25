@@ -85,7 +85,7 @@ class Stamina(Stat):
     growcost = 1.0
 
 class Genome():
-    mutationRate=1
+    mutationRate=2
     mutations=0
     def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, speciesName: str='', mutations: int=0):
 
@@ -121,10 +121,10 @@ class Genome():
 
         self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
         
-        self.brain = brain
-        
-        self.age = 0
-        self.speciesName = speciesName
+        self.brain=brain
+        self.mutations=mutations
+        self.age=0
+        self.speciesName=speciesName
         # *size
         # *deadliness
         # *speed
@@ -194,8 +194,10 @@ class Genome():
         def modString(string: str, char: chr, position: int) -> str:
             return string[:position] + char + string[position+1:]
 
-        mutations=0
-        while self.mutationRate*0.666 > random.random()*(mutations + 1):
+        newMutations=0
+        # this will give something pretty close to averaging mutationRate mutations
+        # while still having some chance of zero. it was the best I could come up with
+        while random.random()*self.mutationRate**1.4*1.4 > random.random()*(newMutations + 1):
             self.mutations += 1
             if self.mutations % 10 == 0:
                 self.speciesName=modString(self.speciesName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random()*len(self.speciesName)))
@@ -277,9 +279,11 @@ Genome.randomGenome=staticmethod(randomGenome)
 # but always has a chance of repeating 0 times.
 
 candidates=[
-    lambda rate, mutations: random.random()*rate*1.5 > random.random()*(mutations + 1),
+    lambda rate, mutations: random.random()*rate*2 > random.random()*(mutations + 1),
     lambda rate, mutations: random.random()*(mutations + 1) < rate,
-    lambda rate, mutations: rate**(mutations+1) > random.random()*(rate+1)**(mutations + 1)*(1 + (mutations*rate) / (mutations * rate + 1))
+    lambda rate, mutations: rate**(mutations+1) > random.random()*(rate+1)**(mutations + 1)*(1 + (mutations*rate) / (mutations * rate + 1)),
+    lambda rate, mutations: rate * random.random() > random.random()*(mutations + 1),
+    lambda rate, mutations: random.random()*rate**1.4*1.4 > random.random()*(mutations + 1)
     # 2/3, 4/9, 8/27
 ]
 def avgMutations(rate, f):
@@ -302,4 +306,4 @@ def convergence(x):
 
 def headToHead():
     for n in range(len(candidates)):
-        print(f'function {n + 1}: {[avgMutations(i+1, n) for i in range(5)]}')
+        print(f'function {n + 1}: {[avgMutations(i+1, n) for i in range(10)]}')
