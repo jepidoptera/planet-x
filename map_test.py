@@ -10,7 +10,15 @@ class testMap(unittest.TestCase):
         centerNode = map.nodes[105]
         neighbors = [neighbor.index for neighbor in centerNode.neighbors]
         self.assertTrue(neighbors == [104, 114, 115, 106, 95, 94])
-        map.nodes[81].obstruction = 'something'
+
+        self.assertTrue(centerNode.x == 10 and centerNode.y == 5)
+        nextNode=map.nodes[135]
+        dist=Map.getDistance(centerNode, nextNode)
+        self.assertTrue(dist == 3)
+        fleePath=Map.findPathAway(nextNode, centerNode, safeDistance=7)
+        self.assertTrue(Map.getDistance(centerNode, fleePath[-1])==7)
+
+        # map.nodes[81].obstruction = 'something'
         map.nodes[82].obstruction = 'something'
         map.nodes[83].obstruction = 'something'
         map.nodes[84].obstruction = 'something'
@@ -19,7 +27,7 @@ class testMap(unittest.TestCase):
         map.nodes[87].obstruction = 'something'
         path = Map.findPath(map.nodes[63], map.nodes[103])
         print ([node.index for node in path])
-        self.assertTrue(len(path) == 8)
+        self.assertTrue(len(path) == 6)
 
 testMap().test()
 
