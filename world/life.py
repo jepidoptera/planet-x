@@ -27,6 +27,7 @@ thoughtThreshold:int = 60
 moveThreshold:int = 60
 
 loadfile = ''
+scenario = 'herbs'
 
 def run():
     wrapper(animate)
@@ -171,34 +172,37 @@ def loadWorld(filename: str) -> dict[str: int, str: int, str: int, str: set[Crea
     }
 
 def generateCreatures():
-    print(f'generating 300 random creatures...')
-    herb = templates.herbivore()
-    carn = templates.carnivore()
-    # now add some random in the mix
-    herbs = [templates.cross(herb, templates.cross(herb, templates.rando()), random.choice(map.nodes)) for n in range(300)] 
-    for creature in herbs: 
-        creature.speciesName = 'deersheep'
-        creature.genome[0].speciesName = 'deersheep'
-        creature.genome[1].speciesName = 'deersheep'
-    carns = [templates.cross(carn, templates.rando(), random.choice(map.nodes)) for n in range(0)]
-    for creature in carns: 
-        creature.speciesName = 'tigerwolf'
-        creature.genome[0].speciesName = 'tigerwolf'
-        creature.genome[1].speciesName = 'tigerwolf'
-    creatures: set[Creature] = (
-        herbs + carns
-        # + [templates.cross(carn, templates.cross(carn, templates.rando()), random.choice(map.nodes)) for n in range(100)]
-    )
-    # creatures = (
-    #     [templates.herbivore(random.choice(map.nodes)) for n in range(200)]
-    #     + [templates.carnivore(random.choice(map.nodes)) for n in range(20)]
-    # )
-    # they have served their purpose
-    del(herb)
-    del(carn)
+    if scenario == 'random':
+        print(f'generating 300 random creatures...')
+        creatures = set([templates.rando(random.choice(map.nodes)) for n in range(300)])
+
+    else:
+        herb = templates.herbivore()
+        carn = templates.carnivore()
+        # now add some random in the mix
+        herbs = [templates.cross(herb, templates.cross(herb, templates.rando()), random.choice(map.nodes)) for n in range(300)] 
+        for creature in herbs: 
+            creature.speciesName = 'deersheep'
+            creature.genome[0].speciesName = 'deersheep'
+            creature.genome[1].speciesName = 'deersheep'
+        carns = [templates.cross(carn, templates.rando(), random.choice(map.nodes)) for n in range(0)]
+        for creature in carns: 
+            creature.speciesName = 'tigerwolf'
+            creature.genome[0].speciesName = 'tigerwolf'
+            creature.genome[1].speciesName = 'tigerwolf'
+        creatures: set[Creature] = (
+            herbs + carns
+            # + [templates.cross(carn, templates.cross(carn, templates.rando()), random.choice(map.nodes)) for n in range(100)]
+        )
+        # creatures = (
+        #     [templates.herbivore(random.choice(map.nodes)) for n in range(200)]
+        #     + [templates.carnivore(random.choice(map.nodes)) for n in range(20)]
+        # )
+        # they have served their purpose
+        del(herb)
+        del(carn)
 
     for creature in creatures:
-        creature.age = random.random() * .5 * creature.longevity
         creature.moveTimer = random.random() * moveThreshold
         creature.thinkTimer = random.random() * thoughtThreshold
 
