@@ -16,9 +16,9 @@ class testGenome(unittest.TestCase):
             planteating=1, 
             sightrange=1, 
             sightfield=1,
-            mindStr='11111111111111111111111111111111111111',
-            speciesName='11111111'
-                    
+            brain='11111111111111111111111111111111111111',
+            speciesName='11111111',
+            mutations=1
         )
         gene2 = Genome(
             deadliness=9, 
@@ -32,23 +32,25 @@ class testGenome(unittest.TestCase):
             planteating=9, 
             sightrange=9, 
             sightfield=9,
-            mindStr='99999999999999999999999999999999999999',
-            speciesName='99999999'
+            brain='99999999999999999999999999999999999999',
+            speciesName='99999999',
+            mutations = 9
         )
         gene3=Genome.merge(gene1, gene2)
         gene3.printRawStats()
-        print(gene3.mindStr)
+        print(gene3.brain)
 
         [self.assertTrue(char in [1, 9])
             for char in [
                 v.value for v in gene3.stats.values()
             ] + 
             [
-                int(c) for c in gene3.mindStr
+                int(c) for c in gene3.brain
             ] +
             [
                 int(c) for c in gene3.speciesName
             ]
         ]
+        self.assertTrue(gene3.mutations == 9)
 
 testGenome().test()
