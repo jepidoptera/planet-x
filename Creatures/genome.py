@@ -32,18 +32,18 @@ class Fortitude(Stat):
 
 class Deadliness(Stat):
     max = 7
-    metacost = 2.0
+    metacost = 4.0
     growcost = 1.0
 
 class Speed(Stat):
     max = 12
-    metacost = 2.0
+    metacost = 4.0
     growcost = 1.0
 
 class Longevity(Stat):
     min = 1
     max = INFINITY # imortality would require infinite energy tho
-    metacost = 1.0
+    metacost = 0.8
     growcost = 1.0
 
 class Intelligence(Stat):
@@ -54,7 +54,7 @@ class Intelligence(Stat):
 
 class MeatEating(Stat):
     max = 7
-    metacost = 1.0
+    metacost = 4.0
     growcost = 0.0
 
 class PlantEating(Stat):
@@ -85,7 +85,7 @@ class Stamina(Stat):
     growcost = 1.0
 
 class Genome():
-    mutationRate=0.5
+    mutationRate=1
     mutations=0
     def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, speciesName: str='', mutations: int=0):
 
