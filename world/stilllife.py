@@ -1,23 +1,27 @@
 from creatures.creature import Creature
-from world import life
+from world.life import *
 
 def run(loadfile: str=''):
     
     creatures: set[Creature]
     if loadfile:
-        creatures = life.loadCreatures(loadfile)
+        scenario=Life.loadWorld(loadfile)
+
     else:
-        creatures = life.generateCreatures()
+        scenario=Scenarios.herbivores_only
+
+    creatures=scenario.creatures
+    world=scenario.world
 
     over=False
     steps=0
     while not over:
         steps += 1
-        creatures = life.cycle(creatures)
+        Life.cycle(creatures, world)
         if steps % 10 == 0:
             # count surviving species
             print (f'steps: {steps}')
-            species = life.countSpecies(creatures)
+            species = Life.countSpecies(creatures)
             print (f'total{len(creatures)}')
             for y in range((min(5, len(species)))):
                 print(f'{species[y][0]}: {species[y][1]}')

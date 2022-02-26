@@ -11,17 +11,44 @@ import curses
 #########################################
 
 class Scenario():
-    def __int__(self, map: Map, creatures: set[Creature]):
-        for creature in creatures:
-            creature.moveTimer = random.random() * Life.moveThreshold
-            creature.thinkTimer = random.random() * Life.thoughtThreshold
-        self.map=map
+    world: Map
+    creatures: set[Creature]
+    steps: int=0
+    def __init__(self, world: Map, creatures: set[Creature]):
+        self.world=world
         self.creatures=creatures
+        for creature in creatures:
+            creature.moveTimer = random.random() * 60
+            creature.thinkTimer = random.random() * 60
+            if creature.location.index == -1:
+                creature.location=random.choice(world.nodes)
 
-class Scenarios(Enum[Scenario]):
+class Scenarios():
+    random_creatures = Scenario(
+            world=Map(80,40).populateGrass(value=20, density=0.2), 
+            creatures=set([
+                templates.rando() 
+                for n in range(300)
+            ])
+        )
     herbivores_only = Scenario(
-        Map(80,40), 
-        set([templates.cross([templates.random] + [templates.herbivore*3]) for n in range(300)]))
+            world=Map(80,40).populateGrass(value=20, density=0.2), 
+            creatures=set([
+                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
+                for n in range(300)
+            ])
+        )
+    predator_prey = Scenario(
+            world=Map(80,40).populateGrass(value=20, density=0.2), 
+            creatures=set([
+                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
+                for n in range(300)
+            ] +
+            [
+                templates.cross(*[templates.rando(), *[templates.carnivore()]*3]) 
+                for n in range(30)
+            ])
+        )
 
 class Life():
     steps:int = 0
@@ -32,36 +59,31 @@ class Life():
 
     loadDir='species/'
 
-    def __init__(self, loadfile: str='', scnenario: Scenario=Scenarios.herbivores_only):
+    def __init__(self, scenario: Scenario=Scenarios.herbivores_only, loadfile: str=''):
         if loadfile:
-            world = loadWorld(self.loadDir + loadfile)
-            map = Map(80, 40)
-            self.steps = world['steps']
-            self.creatures = world['creatures']
-        else:
-            self.steps=0
-            self.map=Scenario.map
-            self.creatures=Scenario.creatures
-        
-        # seed some grass to start
-        for node in map.nodes:
-            if(random.random() < 0.2): node.resource=Resource(ResourceType.grass, 20)
+            scenario = self.loadWorld(self.loadDir + loadfile)
 
+        self.world=scenario.world
+        self.creatures=scenario.creatures
+        
+    def loadScenario(self, scenario: Scenario):
+        self.creatures=scenario.creatures
+        self.world=scenario.world
 
     def run(self):
         wrapper(self.animate)
 
     @staticmethod
-    def cycle(creatures: set[Creature]):
+    def cycle(creatures: set[Creature], world: Map):
 
         moveThreshold=Life.moveThreshold
         thoughtThreshold=Life.thoughtThreshold
 
-        random.choice(map.nodes).resource = Resource(ResourceType.grass, 20)
-        random.choice(map.nodes).resource = Resource(ResourceType.grass, 20)
+        random.choice(world.nodes).resource = Resource(ResourceType.grass, 20)
+        random.choice(world.nodes).resource = Resource(ResourceType.grass, 20)
 
-        aliveCreatures: set[Creature] = set()
-        for creature in creatures:
+        aliveCreatures: set[Creature] = set(creatures)
+        for creature in aliveCreatures:
             
             creature.thinkTimer += creature.intelligence/2
             if creature.thinkTimer > thoughtThreshold:
@@ -75,15 +97,13 @@ class Life():
 
             creature.age += 1
             creature.energy -= creature.metabolism
-            if creature.age > creature.longevity * 100 or creature.energy < 0:
+            if creature.age > creature.longevity or creature.energy < 0:
                 creature.die()            
 
-            if not creature._dead: aliveCreatures.add(creature)
+            if creature._dead: creatures.remove(creature)
             if creature.offspring: 
-                aliveCreatures.add(creature.offspring)
+                creatures.add(creature.offspring)
                 creature.offspring=None
-
-        return aliveCreatures
 
     @staticmethod
     def countSpecies(creatures):
@@ -113,32 +133,33 @@ class Life():
         viewY: int=0
         viewWidth: int=80
         viewHeight: int=40
-        mapHeight: int=self.mapHeight
-        mapWidth: int=self.mapWidth
+        mapHeight: int=self.world.mapHeight
+        mapWidth: int=self.world.mapWidth
+        steps=self.steps
 
         while not over:
 
-            creatures = Life.cycle(creatures)
+            Life.cycle(self.creatures, self.world)
 
             steps+=1
             if steps % 10 == 0:
-                species=Life.countSpecies(creatures)
+                species=Life.countSpecies(self.creatures)
 
             stdscr.addstr(0, 0, str(steps))
             stdscr.refresh()
             inKey=stdscr.getch()
             if inKey==ord('q'): over=True
-            if inKey==ord('s'): saveWorld(creatures, steps, f'species/{species[0][0]} {steps}.txt')
+            if inKey==ord('s'): Life.saveWorld(self.creatures, steps, f'species/{species[0][0]} {steps}.txt')
             if inKey==curses.KEY_UP: viewY = max(viewY-1, 0)
             if inKey==curses.KEY_DOWN: viewY = min(viewY+1, mapHeight-viewHeight)
             if inKey==curses.KEY_LEFT: viewX = max(viewX-1, 0)
             if inKey==curses.KEY_RIGHT: viewX = min(viewX+1, mapWidth-viewWidth)
-            if inKey==ord('t'): creatures.add(templates.carnivore(random.choice(map.nodes)))
-            if inKey==ord('c'): creatures.add(templates.scavenger(random.choice(map.nodes)))
+            if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(map.nodes)))
+            if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(map.nodes)))
             
             for y in range(viewY, viewY + min(curses.LINES, mapHeight-1)):
                 row = [
-                    map.nodes[x*mapHeight*2 + (y % 2)*mapHeight + y//2] 
+                    self.world.nodes[x*mapHeight*2 + (y % 2)*mapHeight + y//2] 
                     for x in range(viewX, viewX + min(curses.COLS//5 - 2, viewWidth//2-1))
                 ]
                 line = '' if y % 2 == 0 else '   '
@@ -156,7 +177,7 @@ class Life():
                 stdscr.addstr(y, 0, line)
 
             # show top existing species
-            stdscr.addstr(viewHeight, 0, f'total:{len(creatures)}   ')
+            stdscr.addstr(viewHeight, 0, f'total:{len(self.creatures)}   ')
             stdscr.addstr(viewHeight + 1, 0, f'viewport: {viewX} {viewY}')
             for y in range(min(3, len(species))):
                 stdscr.addstr(viewHeight+2+y, 0, f'{species[y][0]}: {species[y][1]}   ')
@@ -173,7 +194,7 @@ class Life():
                 'creatures':[creature.toJson() for creature in creatures]}, 
             file, indent=4)
 
-    def loadWorld(self, filename: str) -> dict[str: int, str: int, str: int, str: set[Creature]]:
+    def loadWorld(self, filename: str) -> Scenario:
         print(f'loading {filename}')
         with open(filename, 'r') as file:
             data = json.load(file)
@@ -184,12 +205,10 @@ class Life():
                 Creature.fromJson(c, map.nodes[c['location']])
                 for c in data['creatures']
             ])
-        self.map = Map(mapWidth=self.mapWidth, mapHeight=self.mapHeight)
-        return {
-            'steps': self.steps,
-            'map': self.map,
-            'creatures': self.creatures
-        }
+        self.world=Map(mapWidth=self.mapWidth, mapHeight=self.mapHeight).populateGrass(20, 0.1)
+        scenario=Scenario(self.world, self.creatures)
+        scenario.steps=self.steps
+        return scenario
 
 # def generateCreatures():
 #     if scenario == 'random':

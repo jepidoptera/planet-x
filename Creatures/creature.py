@@ -116,7 +116,7 @@ class Creature():
         self.speed = sum([g.speed for g in genome])/len(genome)
         self.fortitude = sum([g.fortitude for g in genome])/len(genome)
         self.fertility = sum([g.fertility for g in genome])/len(genome)
-        self.longevity = sum([g.longevity for g in genome])/len(genome)
+        self._longevity = sum([g.longevity for g in genome])/len(genome)
         self.stamina = sum([g.stamina for g in genome])/len(genome)
         self.intelligence = sum([g.intelligence for g in genome])/len(genome)
         self.meateating = sum([g.meatEating for g in genome])/len(genome)
@@ -147,6 +147,10 @@ class Creature():
 
         self.processStimulus('birth')
         return
+
+    @property
+    def longevity(self) -> float:
+        return self._longevity * 100 # lifespan in frames
 
     @property 
     def metabolism(self) -> float:
@@ -523,7 +527,7 @@ Creature.fromJson=staticmethod(fromJson)
 
 Creature.creatureNeurons=list[Neuron]([
     Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: other.deadliness - self.deadliness),
-    Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age / other.longevity),
+    Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age/other.longevity),
     Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health),
     Neuron(NeuronType.creature, name='creature_similarity', sense=lambda self, other: self.getSimilarity(other)),
     Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: other.speed - self.speed),
@@ -533,7 +537,7 @@ Creature.creatureNeurons=list[Neuron]([
 Creature.selfNeurons=list[Neuron]([
     Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy * 0.01),
     Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health),
-    Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age),
+    Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age/self.longevity),
     Neuron(NeuronType.self, name='self_sprints', sense=lambda self: self.sprintMoves),
     Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
     Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack

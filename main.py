@@ -16,5 +16,4 @@ for arg, value in args:
 if still:
     stilllife.run(loadfile=filename)
 else:
-    life.loadfile=filename
-    life.run()
+    life.Life(loadfile=filename).run()

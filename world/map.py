@@ -18,7 +18,7 @@ class Resource():
         self.value = value
 
 class MapNode():
-    def __init__(self, index: int=0, neighbors: list=[], x: float=0.0, y: float=0.0, z: float=0.0):
+    def __init__(self, index: int=-1, neighbors: list=[], x: float=0.0, y: float=0.0, z: float=0.0):
         self.index = index
         self.neighbors = neighbors
         self.occupant: any = None
