@@ -1,30 +1,25 @@
 from creatures.creature import Creature
-from world.life import *
+from world.map import Map
+from world import life
 
-def run(loadfile: str=''):
+class TextWorld():
+    def __init__(self,world: Map, creatures: set[Creature]):
+        self.world=world
+        self.creatures=creatures
     
-    creatures: set[Creature]
-    if loadfile:
-        scenario=Life.loadWorld(loadfile)
+    def run(self):
+        over=False
+        steps=0
+        while not over:
+            steps += 1
+            life.cycle(self.world, self.creatures)
+            if steps % 50 == 0:
+                # count surviving species
+                print (f'steps: {steps}')
+                species = life.countSpecies(self.creatures)
+                print (f'total{len(self.creatures)}')
+                for y in range((min(5, len(species)))):
+                    print(f'{species[y][0]}: {species[y][1]}')
 
-    else:
-        scenario=Scenarios.herbivores_only
-
-    creatures=scenario.creatures
-    world=scenario.world
-
-    over=False
-    steps=0
-    while not over:
-        steps += 1
-        Life.cycle(creatures, world)
-        if steps % 10 == 0:
-            # count surviving species
-            print (f'steps: {steps}')
-            species = Life.countSpecies(creatures)
-            print (f'total{len(creatures)}')
-            for y in range((min(5, len(species)))):
-                print(f'{species[y][0]}: {species[y][1]}')
-
-# main()
+    # main()
 

@@ -100,7 +100,8 @@ class Creature():
             location: MapNode, 
             genome: list[Genome],
             energy: float=100, 
-            speciesName: str='', 
+            speciesName: str='',
+            offspringCount: int=0,
             brain: str='',
             age: int=0,
         ):
@@ -128,7 +129,7 @@ class Creature():
         self.speciesName=speciesName or mergeString(*[g.speciesName for g in genome])
 
         self.age = age
-        self.offspringCount=0
+        self.offspringCount=offspringCount
         self._health = self.fortitude
         self.energy = energy
         self.sprintMoves = 0
@@ -219,18 +220,6 @@ class Creature():
 
         return self.senseAxons + self.memoryAxons + self.relayAxons + self.actionAxons
 
-    def printBrain(genome):
-        # 5ed133900322c000322cd5e50a17ffff171fffff57058348b71dd2a8061f7e780927c00b0b15ffff15274ccc2715ffff445999c4e61b31cf
-        def fromHex(hexcode):
-            input = int(hexcode[:2], 16) % len(Creature.allNeurons)
-            output = int(hexcode[2:4], 16) % len(Creature.allNeurons)
-            factor = int(hexcode[4:8], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
-            return (Creature.allNeurons[input].name, Creature.allNeurons[output].name, factor)
-        
-        for n in range(int(len(genome)/8)):            
-            axon = fromHex(genome[n * 8: (n + 1) * 8])
-            print (f'{axon[0]} -> {axon[1]}: {axon[2]}')
-
     def animate(self) -> str:
         if self.speciesName == 'tigerwolf':
             er = 1
@@ -284,6 +273,7 @@ class Creature():
                     energy=self.energy,
                     speciesName=mergeString(self.speciesName, self.mate.speciesName)
                 )
+                self.offspringCount += 1
             return 'action_mate'
             
         # move along the path
@@ -490,35 +480,41 @@ class Creature():
                 'sightrange': self.genome[n]._sightrange,
                 'sightfield': self.genome[n]._sightfield,
                 'brain': self.genome[n].brain,
-                'speciesName': self.genome[n].speciesName
+                'speciesName': self.genome[n].speciesName,
             } for n in range(len(self.genome))],
             'age': self.age,
             'brain': self.brain,
             'energy': self.energy,
             'location': self.location.index,
-            'speciesName': self.speciesName
+            'speciesName': self.speciesName,
+            'offspring': self.offspringCount
         }
 
 def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
     return Creature(
-        location, *[Genome(
-            mutations=genome['mutations'],
-            deadliness=genome['deadliness'],
-            speed=genome['speed'],
-            stamina=genome['stamina'],
-            fortitude=genome['fortitude'],
-            intelligence=genome['intelligence'],
-            longevity=genome['longevity'],
-            fertility=genome['fertility'],
-            meateating=genome['meateating'],
-            planteating=genome['planteating'],
-            sightrange=genome['sightrange'],
-            sightfield=genome['sightfield'],
-            brain=genome['brain'],
-            speciesName=genome['speciesName']
-        ) for genome in j['genomes']], 
+        location=location,
+        genome=[
+            Genome(
+                mutations=genome['mutations'],
+                deadliness=genome['deadliness'],
+                speed=genome['speed'],
+                stamina=genome['stamina'],
+                fortitude=genome['fortitude'],
+                intelligence=genome['intelligence'],
+                longevity=genome['longevity'],
+                fertility=genome['fertility'],
+                meateating=genome['meateating'],
+                planteating=genome['planteating'],
+                sightrange=genome['sightrange'],
+                sightfield=genome['sightfield'],
+                brain=genome['brain'],
+                speciesName=genome['speciesName']
+            ) 
+            for genome in j['genomes']
+        ], 
         brain=j['brain'] if 'brain' in j else '',
         speciesName=j['speciesName'] if 'speciesName' in j else '',
+        offspringCount=j['offspring'] if 'offspring' in j else 0,
         energy=float(j['energy']) if 'energy' in j else 100,
         age=int(j['age']) if 'age' in j else 0
     )
