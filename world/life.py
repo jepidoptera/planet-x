@@ -18,11 +18,13 @@ class Scene():
         world: Map, 
         creatures: set[Creature], 
         stepFunction: Callable[[any], None]=None, 
-        steps: int=0
+        steps: int=0,
+        name: str=''
     ):
-        self.world=world
+        self.world=world or Scene._basicWorld()
         self.creatures=creatures
         self.steps=steps
+        self.name=name
         if stepFunction: self.stepFunction=stepFunction
 
         for creature in creatures:
@@ -37,50 +39,56 @@ class Scene():
             if self.stepFunction: self.stepFunction()
         self.step = step
 
-class Scenarios():
-    def _growGrass(world: Map, number: int=1, value: float=10):
-        for _ in range(number):
-            random.choice(world.nodes).resource = Resource(ResourceType.grass, value)
-    def _strewMeat(world: Map, number: int=1, value: float=10):
-        for _ in range(number):
-            random.choice(world.nodes).resource = Resource(ResourceType.meat, value)
     def _basicWorld():
         return Map(80,40).populateGrass(value=20, density=0.2)
 
-    def random_creatures() -> Scene:
-        world=Scenarios._basicWorld()
+class Scenarios():
+
+    def _growGrass(world: Map, number: int=1, value: float=10):
+        for _ in range(number):
+            random.choice(world.nodes).resource = Resource(ResourceType.grass, value)
+ 
+    def _strewMeat(world: Map, number: int=1, value: float=10):
+        for _ in range(number):
+            random.choice(world.nodes).resource = Resource(ResourceType.meat, value)
+
+    def random_creatures(world: Map=None) -> Scene:
+        world=world
         return Scene(
             world=world, 
             creatures=set([
                 templates.rando() 
                 for n in range(300)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            name='random creatures'
         )
 
-    def herbivores() -> Scene:
-        world=Scenarios._basicWorld()
+    def herbivores(world: Map=None) -> Scene:
+        world=world
         return Scene(
             world=world, 
             creatures=set([
                 templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
                 for n in range(300)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            name='herbivores'
         )
 
-    def scavengers() -> Scene:
-        world=Scenarios._basicWorld()
+    def scavengers(world: Map=None) -> Scene:
+        world=world
         return Scene(
             world=world, 
             creatures=set([
                 templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
                 for n in range(300)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            name='scavengers'
         )
-    def predator_prey() -> Scene: 
-        world=Scenarios._basicWorld()
+    def predator_prey(world: Map=None) -> Scene: 
+        world=world
         return Scene(
             world=world, 
             creatures=set([
@@ -91,11 +99,12 @@ class Scenarios():
                 templates.cross(*[templates.rando(), *[templates.carnivore()]*3]) 
                 for n in range(30)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            name='predators and prey'
         )
 
-    def superdeer() -> Scene: 
-        world=Scenarios._basicWorld(), 
+    def superdeer(world: Map=None) -> Scene: 
+        world=world
         return Scene(
             world=world, 
             creatures=set([
@@ -106,11 +115,12 @@ class Scenarios():
                 templates.herbivore_evolved(energy=10)
                 for n in range(10)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            name='superdeer'
         )
 
-    def wolfDen() -> Scene:
-        world=Scenarios._basicWorld()
+    def wolfDen(world: Map=None) -> Scene:
+        world=world
         optimalWolves: int=20
         optimalDeer: int=200
 
@@ -137,7 +147,8 @@ class Scenarios():
 
         scene=Scene(
             world=world,
-            creatures=set(wolves+deers)
+            creatures=set(wolves+deers),
+            name='wolfden'
         )
         scene.stepFunction=lambda: maintainPopulations(scene)
         return scene
@@ -198,8 +209,9 @@ def saveCreatures(world: Map, creatures: set[Creature], steps:int, filename: str
 
 def saveWorld(scene: Scene, filename: str):
     with open(dirname + filename + '.world', 'w') as file:
-        json.dump([
-            {
+        json.dump({
+            'scenario': scene.name,
+            'mapnodes': [{
                 'index': node.index,
                 'neighbornodes': [n.index for n in node.neighbors],
                 'grass': node.resource.value if node.resource and node.resource.type == ResourceType.grass else 0,
@@ -208,8 +220,8 @@ def saveWorld(scene: Scene, filename: str):
                     Creature.toJson(node.occupant) if type(node.occupant) == Creature
                         else None
                 )
-            }
-        for node in scene.world.nodes],
+            } for node in scene.world.nodes]
+        },
         file, indent=4)
 
 def loadCreatures(filename: str) -> Scene:
