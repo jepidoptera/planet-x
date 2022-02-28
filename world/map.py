@@ -90,7 +90,7 @@ class Map():
         for node in self.nodes:
             if random.random() < density:
                 node.resource=Resource(ResourceType.grass, value)
-            return self
+        return self
 
     def print(self):
         for y in range(self.mapHeight):
