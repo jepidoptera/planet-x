@@ -4,7 +4,7 @@ from world import life
 still = True
 filename=''
 dirname='species/'
-scenario: life.Scenario
+scenario: life.Scenario = None
 
 argList=sys.argv[1:]
 args, values=getopt.getopt(argList, 'af:s:')
@@ -17,14 +17,16 @@ for arg, value in args:
         if value == 'superdeer':
             scenario=life.Scenarios.superdeer()
         elif value == 'herbivores':
-            scenario=life.Scenarios.herbivores_only()
+            scenario=life.Scenarios.herbivores()
+
+if not scenario: scenario = life.Scenarios.random_creatures()
 
 if filename:
     scenario=life.loadWorld(dirname + filename)
 
 if still:
     from world.stilllife import TextWorld
-    TextWorld(scenario.world, scenario.creatures, scenario.steps).run()
+    TextWorld(scenario).run()
 else:
     from world.animatelife import Animation
-    Animation(scenario.world, scenario.creatures, scenario.steps).run()
+    Animation(scenario).run()
