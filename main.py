@@ -3,8 +3,8 @@ import sys, getopt
 from world import life
 still = True
 filename=''
-dirname='species/'
-scenario: life.Scenario = None
+# dirname='species/'
+scenario: life.Scene = None
 
 argList=sys.argv[1:]
 args, values=getopt.getopt(argList, 'af:s:')
@@ -18,11 +18,15 @@ for arg, value in args:
             scenario=life.Scenarios.superdeer()
         elif value == 'herbivores':
             scenario=life.Scenarios.herbivores()
+        elif value == 'wolfden':
+            scenario=life.Scenarios.wolfDen()
+        elif value == 'random':
+            scenario = life.Scenarios.random_creatures()
 
-if not scenario: scenario = life.Scenarios.random_creatures()
+if not scenario: scenario = life.Scenarios.wolfDen()
 
 if filename:
-    scenario=life.loadWorld(dirname + filename)
+    scenario=life.loadWorld(life.dirname + filename)
 
 if still:
     from world.stilllife import TextWorld
