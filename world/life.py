@@ -4,40 +4,82 @@ from creatures.creature import *
 from creatures.genome import *
 import random
 import json
+from typing import Callable
 
 class Scenario():
     world: Map
     creatures: set[Creature]
     steps: int=0
-    def __init__(self, world: Map, creatures: set[Creature]):
+    info: str=''
+
+    def __init__(self, 
+        world: Map, 
+        creatures: set[Creature], 
+        stepFunction: Callable[[any], None]=None, 
+        steps: int=0
+    ):
         self.world=world
         self.creatures=creatures
+        self.steps=steps
+
         for creature in creatures:
             creature.moveTimer = random.random() * 60
             creature.thinkTimer = random.random() * 60
             if creature.location.index == -1:
                 creature.location=random.choice(world.nodes)
 
+        def step():
+            cycle(self.world, self.creatures)
+            self.steps += 1
+            if stepFunction: stepFunction()
+        self.step = step
+
 class Scenarios():
-    def random_creatures():
+    def _growGrass(world: Map, number: int=1, value: float=10):
+        for _ in range(number):
+            random.choice(world.nodes).resource = Resource(ResourceType.grass, value)
+    def _strewMeat(world: Map, number: int=1, value: float=10):
+        for _ in range(number):
+            random.choice(world.nodes).resource = Resource(ResourceType.meat, value)
+    def _basicWorld():
+        return Map(80,40).populateGrass(value=20, density=0.2)
+
+    def random_creatures() -> Scenario:
+        world=Scenarios._basicWorld()
         return Scenario(
-                world=Map(80,40).populateGrass(value=20, density=0.2), 
-                creatures=set([
-                    templates.rando() 
-                    for n in range(300)
-                ])
-            )
-    def herbivores_only():
+            world=world, 
+            creatures=set([
+                templates.rando() 
+                for n in range(300)
+            ]),
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+        )
+
+    def herbivores() -> Scenario:
+        world=Scenarios._basicWorld()
         return Scenario(
-                world=Map(80,40).populateGrass(value=20, density=0.2), 
-                creatures=set([
-                    templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
-                    for n in range(300)
-                ])
-            )
-    def predator_prey(): 
+            world=world, 
+            creatures=set([
+                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
+                for n in range(300)
+            ]),
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+        )
+
+    def scavengers() -> Scenario:
+        world=Scenarios._basicWorld()
         return Scenario(
-            world=Map(80,40).populateGrass(value=20, density=0.2), 
+            world=world, 
+            creatures=set([
+                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
+                for n in range(300)
+            ]),
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
+        )
+    def predator_prey() -> Scenario: 
+        world=Scenarios._basicWorld()
+        return Scenario(
+            world=world, 
             creatures=set([
                 templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
                 for n in range(300)
@@ -45,11 +87,14 @@ class Scenarios():
             [
                 templates.cross(*[templates.rando(), *[templates.carnivore()]*3]) 
                 for n in range(30)
-            ])
+            ]),
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
         )
-    def superdeer(): 
+
+    def superdeer() -> Scenario: 
+        world=Scenarios._basicWorld(), 
         return Scenario(
-            world=Map(80,40).populateGrass(value=20, density=0.2), 
+            world=world, 
             creatures=set([
                 templates.herbivore(energy=10) 
                 for n in range(300)
@@ -57,17 +102,48 @@ class Scenarios():
             [
                 templates.herbivore_evolved(energy=10)
                 for n in range(10)
-            ])
+            ]),
+            stepFunction=lambda: Scenarios._growGrass(world, 2, 20)
         )
+
+    def wolfDen() -> Scenario:
+        world=Scenarios._basicWorld()
+        optimalWolves: int=20
+        optimalDeer: int=200
+
+        wolves=[
+                templates.carnivore(mutate=True)
+                for n in range(optimalWolves)
+            ]
+        deers=[
+                templates.herbivore(mutate=True)
+                for n in range(optimalDeer)
+            ]
+
+        def maintainPopulations(scene: Scenario, deers: list[Creature], wolves: list[Creature]):
+            if scene.steps % 100 == 0:
+                deers=filter(lambda deer: not deer.dead, deers)
+                wolves=filter(lambda wolf: not wolf.dead, wolves)
+                deers.sort(key=lambda deer: deer.offspringCount * 5000 + deer.age + deer.energy, reverse=True)
+                wolves.sort(key=lambda wolf: wolf.offspringCount * 5000 + wolf.age + wolf.energy, reverse=True)
+                while len(deers) < optimalDeer:
+                    deers.append(templates.cross(deers[0], deers[1], location=random.choice(world.nodes)))
+                while len(wolves) < optimalWolves:
+                    wolves.append(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes)))
+
+        scene=Scenario(
+            world=world,
+            creatures=set(wolves+deers)
+        )
+        scene.stepFunction=lambda: maintainPopulations(scene, deers, wolves)
+        return scene
+
 
 steps:int = 0
 thoughtThreshold:int = 60
 moveThreshold:int = 60
 
 def cycle(world: Map, creatures: set[Creature]):
-
-    random.choice(world.nodes).resource = Resource(ResourceType.grass, 20)
-    random.choice(world.nodes).resource = Resource(ResourceType.grass, 20)
 
     aliveCreatures: set[Creature] = set(creatures)
     for creature in aliveCreatures:
