@@ -17,8 +17,6 @@ class NeuronType(Enum):
     relay = 4
     action = 5
 
-netIndex={'lock': False}
-    
 class Neuron():
     activation:float
     sense:typing.Callable
@@ -31,7 +29,7 @@ class Neuron():
         self.action = action
         self.type = type
         self.name = name
-        if not netIndex['lock']: netIndex[name]=self
+        if not name in netIndex: netIndex[name]=self
     def sense(self, *args):
         self.activate(self._sense(*args))
     def activate(self, amount):
@@ -77,6 +75,8 @@ class ActionOption():
 
 # class Brain():
 
+netIndex: dict[str, Neuron]={}
+    
 class Creature():
     victim: any = None
     fear: any = None
@@ -112,11 +112,14 @@ class Creature():
         location.occupant = self
         self.path=[]
         
-        self.genome=genome if type(genome)==list else [genome, genome]
+        self.genome = genome
+        if type(self.genome) != list:
+            raise Exception('list[Genome] expected')
+
         if mutate:
             for g in self.genome:
                 g.mutate()
-                
+
         genome=self.genome
         self.deadliness = sum([g.deadliness for g in genome])/len(genome)
         self.speed = sum([g.speed for g in genome])/len(genome)
@@ -131,7 +134,7 @@ class Creature():
         self.sightField = int(sum([g.sightField for g in genome])/len(genome))
         self.size = sum([g.size.value for g in genome])/len(genome)
         self.brain = brain or mergeString(*[g.brain for g in genome], chunk=8)
-        self.speciesName=speciesName or mergeString(*[g.speciesName for g in genome])
+        self.speciesName=speciesName or mergeString(*[g.variant for g in genome])
 
         self.age = age
         self.offspringCount=offspringCount
@@ -402,6 +405,10 @@ class Creature():
     def processEnvironment(self, vision:list[list[MapNode]]) -> list[ActionOption]:
         actionOptions: list[ActionOption] = []
 
+        self.clearInputs()
+        for sensor in self.selfNeurons:
+            sensor.sense(self)
+
         for distance, layer in enumerate(vision):
             for node in layer:
                 if (node.occupant==self):
@@ -412,14 +419,16 @@ class Creature():
                     actionOptions.append(self.processStimulus(type='creature', target=other, magnitude=1))
 
                 if (node.resource):
+                    if node.resource.type == ResourceType.grass and netIndex['see_grass'].activation: continue
+                    if node.resource.type == ResourceType.meat and netIndex['see_meat'].activation: continue
                     actionOptions.append(self.processStimulus(type='food', target=node, magnitude=min(node.resource.value, 10.0/(distance+1))))
 
         return actionOptions
 
     def processStimulus(self, type:str, target:any=None,  magnitude:float=1.0):
-        self.clearInputs()
-        for sensor in self.selfNeurons:
-            sensor.sense(self)
+        for neuron in self.creatureNeurons + self.relayNeurons:
+            neuron.clear()
+
         if type == 'food':
             for sensor in self.envNeurons:
                 sensor.sense(target.resource)
@@ -471,22 +480,22 @@ class Creature():
 
     def toJson(self) -> dict:
         return {
-            'genomes': [{
-                'mutations': self.genome[n].mutations,
-                'deadliness': self.genome[n]._deadliness,
-                'speed': self.genome[n]._speed,
-                'stamina': self.genome[n]._stamina,
-                'fortitude': self.genome[n]._fortitude,
-                'intelligence': self.genome[n]._intelligence,
-                'longevity': self.genome[n]._longevity,
-                'fertility': self.genome[n]._fertility,
-                'meateating': self.genome[n]._meateating,
-                'planteating': self.genome[n]._planteating,
-                'sightrange': self.genome[n]._sightrange,
-                'sightfield': self.genome[n]._sightfield,
-                'brain': self.genome[n].brain,
-                'speciesName': self.genome[n].speciesName,
-            } for n in range(len(self.genome))],
+            'genomes': [self.genome[n].encode() for n in range(len(self.genome))],
+            # {
+            #     'mutations': self.genome[n].mutations,
+            #     'deadliness': self.genome[n]._deadliness,
+            #     'speed': self.genome[n]._speed,
+            #     'stamina': self.genome[n]._stamina,
+            #     'fortitude': self.genome[n]._fortitude,
+            #     'intelligence': self.genome[n]._intelligence,
+            #     'longevity': self.genome[n]._longevity,
+            #     'fertility': self.genome[n]._fertility,
+            #     'meateating': self.genome[n]._meateating,
+            #     'planteating': self.genome[n]._planteating,
+            #     'sightrange': self.genome[n]._sightrange,
+            #     'sightfield': self.genome[n]._sightfield,
+            #     'brain': self.genome[n].brain,
+            # } 
             'age': self.age,
             'brain': self.brain,
             'energy': self.energy,
@@ -499,23 +508,23 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
     return Creature(
         location=location,
         genome=[
-            Genome(
-                mutations=genome['mutations'],
-                deadliness=genome['deadliness'],
-                speed=genome['speed'],
-                stamina=genome['stamina'],
-                fortitude=genome['fortitude'],
-                intelligence=genome['intelligence'],
-                longevity=genome['longevity'],
-                fertility=genome['fertility'],
-                meateating=genome['meateating'],
-                planteating=genome['planteating'],
-                sightrange=genome['sightrange'],
-                sightfield=genome['sightfield'],
-                brain=genome['brain'],
-                speciesName=genome['speciesName']
-            ) 
-            for genome in j['genomes']
+            Genome.decode(g)
+            # (
+            #     mutations=genome['mutations'],
+            #     deadliness=genome['deadliness'],
+            #     speed=genome['speed'],
+            #     stamina=genome['stamina'],
+            #     fortitude=genome['fortitude'],
+            #     intelligence=genome['intelligence'],
+            #     longevity=genome['longevity'],
+            #     fertility=genome['fertility'],
+            #     meateating=genome['meateating'],
+            #     planteating=genome['planteating'],
+            #     sightrange=genome['sightrange'],
+            #     sightfield=genome['sightfield'],
+            #     brain=genome['brain'],
+            # ) 
+            for g in j['genomes']
         ], 
         brain=j['brain'] if 'brain' in j else '',
         speciesName=j['speciesName'] if 'speciesName' in j else '',
@@ -580,4 +589,3 @@ Creature.allNeurons=list[Neuron](
     Creature.relayNeurons + 
     Creature.actionNeurons
 )
-netIndex['lock']=True
