@@ -7,7 +7,7 @@ def axonsToHex(axons: list[Axon]):
 def randomAxon(): 
     return ''.join(random.choice('abcdef1234567890') for n in range(8))
 
-def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
+def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     herbivore_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
@@ -40,10 +40,34 @@ def herbivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
             brain=axonsToHex(herbivore_mind),
         ), 
         speciesName='deersheep',
-        energy=100
+        energy=100,
+        mutate=mutate
     )
 
-def scavenger(location: MapNode=MapNode(), energy: float=100) -> Creature:
+def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+    return Creature(
+        location=location,
+        genome=Genome(
+            deadliness=0, 
+            speed=12, 
+            stamina=3, 
+            fortitude=2, 
+            intelligence=13, 
+            longevity=42, 
+            fertility=9, 
+            meateating=0, 
+            planteating=7, 
+            sightrange=4, 
+            sightfield=4, 
+            # brai'faecd86fcc85cb780605854211269566f857727c852876a4aba33057cad8b2b34ce3ffc48f193c143fce1315a975ce3a1514d7bed1ac9d96241fed48',
+            brain='574d4678677f91020625851e112695665857727c2997a7d22a225054038ef7f39bccb51a8f199c24fe4e96480be24284b445bc2154b344f7dc920cf4'
+        ), 
+        speciesName='superdeer',
+        energy=100,
+        mutate=mutate
+    )
+
+def scavenger(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     scavenger_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
@@ -73,10 +97,11 @@ def scavenger(location: MapNode=MapNode(), energy: float=100) -> Creature:
             brain=axonsToHex(scavenger_mind),
         ),
         speciesName='coyotefox',
-        energy=energy
+        energy=energy,
+        mutate=mutate
     )
 
-def carnivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
+def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     carnivore_mind = [
         # attack creatures less deadly than self
         Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -1.0),
@@ -118,17 +143,19 @@ def carnivore(location: MapNode=MapNode(), energy: float=100) -> Creature:
             brain=axonsToHex(carnivore_mind),
         ), 
         speciesName='tigerwolf',
-        energy=energy
+        energy=energy,
+        mutate=mutate
     )
 
 def rando(location: MapNode=MapNode(), energy: float=100) -> Creature:
-    return Creature(location, randomGenome(), energy, speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(8)]))
+    return Creature(location, randomGenome(), energy, speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(9)]))
 
-def cross(*creatures, location: MapNode=MapNode()):
+def cross(*creatures, location: MapNode=MapNode(), mutate: bool=False):
     return Creature(
         location=location, 
         genome=[merge(*creature.genome) for creature in creatures], 
-        speciesName=mergeString(*[creature.speciesName for creature in creatures])
+        speciesName=mergeString(*[creature.speciesName for creature in creatures]),
+        mutate=mutate
     )
 
 # 0    20    40    60    80    100    120    140    160    180
