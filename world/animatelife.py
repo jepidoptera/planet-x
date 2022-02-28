@@ -7,10 +7,11 @@ from creatures import templates
 import random
 
 class Animation():
-    def __init__(self, world:Map, creatures: set[Creature], steps: int=0):
-        self.world=world
-        self.creatures=creatures
-        self.steps=steps
+    scenario: life.Scenario
+    def __init__(self, scenario: life.Scenario):
+        self.world=scenario.world
+        self.creatures=scenario.creatures
+        self.scenario=scenario
 
     def run(self):
         wrapper(self.animate)
@@ -32,13 +33,12 @@ class Animation():
         viewHeight: int=40
         mapHeight: int=self.world.mapHeight
         mapWidth: int=self.world.mapWidth
-        steps=self.steps
 
         while not over:
 
-            life.cycle(self.world, self.creatures)
+            self.scenario.step()
+            steps=self.scenario.steps
 
-            steps+=1
             if steps % 10 == 0:
                 species=life.countSpecies(self.creatures)
 

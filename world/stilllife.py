@@ -3,16 +3,17 @@ from world.map import Map
 from world import life
 
 class TextWorld():
-    def __init__(self,world: Map, creatures: set[Creature]):
-        self.world=world
-        self.creatures=creatures
+    def __init__(self, scenario: life.Scenario):
+        self.world=scenario.world
+        self.creatures=scenario.creatures
+        self.scenario=scenario
     
     def run(self):
         over=False
         steps=0
         while not over:
-            steps += 1
-            life.cycle(self.world, self.creatures)
+            self.scenario.step()
+            steps=self.scenario.steps
             if steps % 50 == 0:
                 # count surviving species
                 print (f'steps: {steps}')
