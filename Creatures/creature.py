@@ -104,6 +104,7 @@ class Creature():
             offspringCount: int=0,
             brain: str='',
             age: int=0,
+            mutate: bool=False
         ):
 
         self._dead=False
@@ -112,6 +113,10 @@ class Creature():
         self.path=[]
         
         self.genome=genome if type(genome)==list else [genome, genome]
+        if mutate:
+            for g in self.genome:
+                g.mutate()
+                
         genome=self.genome
         self.deadliness = sum([g.deadliness for g in genome])/len(genome)
         self.speed = sum([g.speed for g in genome])/len(genome)
