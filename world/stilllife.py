@@ -3,7 +3,7 @@ from world.map import Map
 from world import life
 
 class TextWorld():
-    def __init__(self, scenario: life.Scenario):
+    def __init__(self, scenario: life.Scene):
         self.world=scenario.world
         self.creatures=scenario.creatures
         self.scenario=scenario
