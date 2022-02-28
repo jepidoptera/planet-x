@@ -87,7 +87,7 @@ class Stamina(Stat):
 class Genome():
     mutationRate=2
     mutations=0
-    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, speciesName: str='', mutations: int=0):
+    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, variant: str='', mutations: int=0):
 
         # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
 
@@ -104,27 +104,10 @@ class Genome():
             "sight range": SightRange(value=sightrange),
             "sight field": SightField(value=sightfield)
         }
-
-        # phenome
-        self._deadliness = self.stats["deadliness"].value
-        self._speed = self.stats["speed"].value
-        self._stamina = self.stats["stamina"].value
-        self._fortitude = self.stats["fortitude"].value
-        self._intelligence = self.stats["intelligence"].value
-        self._longevity = self.stats["longevity"].value
-        self._fertility = self.stats["fertility"].value
-        self._meateating = self.stats["meat eating"].value
-        self._planteating = self.stats["plant eating"].value
-        self._sightrange = self.stats["sight range"].value
-        self._sightfield = self.stats["sight field"].value
-        self.stats["sight field"].metacost=self._sightrange/4
-
-        self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)
-        
+        self.phenomize()
         self.brain=brain
         self.mutations=mutations
-        self.age=0
-        self.speciesName=speciesName
+        self.variant=variant or ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(9)])
         # *size
         # *deadliness
         # *speed
@@ -140,6 +123,23 @@ class Genome():
 
         return
 
+    def phenomize(self):
+        # phenome
+        self._deadliness = self.stats["deadliness"].value
+        self._speed = self.stats["speed"].value
+        self._stamina = self.stats["stamina"].value
+        self._fortitude = self.stats["fortitude"].value
+        self._intelligence = self.stats["intelligence"].value
+        self._longevity = self.stats["longevity"].value
+        self._fertility = self.stats["fertility"].value
+        self._meateating = self.stats["meat eating"].value
+        self._planteating = self.stats["plant eating"].value
+        self._sightrange = self.stats["sight range"].value
+        self._sightfield = self.stats["sight field"].value
+        self.stats["sight field"].metacost=self._sightrange/4
+
+        self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)        
+    
     @property
     def size(self):
         # return self.__deadliness - self.__fertility / 4
@@ -200,7 +200,7 @@ class Genome():
         while random.random()*self.mutationRate**1.4*1.4 > random.random()*(newMutations + 1):
             self.mutations += 1
             if self.mutations % 10 == 0:
-                self.speciesName=modString(self.speciesName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random()*len(self.speciesName)))
+                self.variant=modString(self.variant, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random()*len(self.variant)))
 
             brainMutation = int(random.random() * 2)
 
@@ -210,6 +210,13 @@ class Genome():
                 self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
         return self
+
+    def encode(self) -> str:
+        genes=self.variant + '|' + str(self.mutations) + '|'
+        for value in self.stats.values():
+            genes += hex(value.value)[2:].zfill(2)
+        genes += '0X' + self.brain
+        return genes
 
     def printStats(self):
         print(*[
@@ -244,7 +251,24 @@ def randomGenome():
         sightrange = int(random.random() * (SightRange.max + 1)),
         sightfield = int(random.random() * (SightField.max) + 1),
         brain = "".join(random.choice('abcdef1234567890') for i in range(128)),
-        speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(10)])
+        variant=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(9)])
+    )
+
+def emptyGenome():
+    return Genome(
+        deadliness=0,
+        speed=0,
+        stamina=0,
+        fortitude=0,
+        intelligence=0,
+        longevity=0,
+        fertility=0,
+        meateating=0,
+        planteating=0,
+        sightrange=0,
+        sightfield=0,
+        brain = "",
+        variant=''
     )
 
 def merge(*args: Genome) -> Genome:
@@ -263,9 +287,10 @@ def merge(*args: Genome) -> Genome:
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
         brain=mergeString(*[g.brain for g in args], chunk=8),
-        speciesName=mergeString(*[g.speciesName for g in args], chunk=1)
+        variant=mergeString(*[g.variant for g in args], chunk=1)
     )
     return merged
+
 def mergeString(*args: str, chunk: int=1) -> str:
     if len(args) == 1: return args[0]
     mergeStr=''
@@ -273,6 +298,20 @@ def mergeString(*args: str, chunk: int=1) -> str:
         genes=[arg[n*chunk:(n+1)*chunk] if len(arg) >= n*chunk else '' for arg in args]
         mergeStr += random.choice(genes)
     return mergeStr
+
+def decode(genes: str) -> Genome:
+    g=emptyGenome()
+    barpos=genes.index('|')
+    g.variant=genes[:barpos]
+    genes=genes[barpos+1:]
+    barpos=genes.index('|')
+    g.mutations=int(genes[:barpos])
+    genes=genes[barpos+1:]
+    for i, stat in enumerate(g.stats.keys()):
+        g.stats[stat].value=int(genes[2*i:2*i+2], 16)
+    g.phenomize()
+    brain=genes[genes.index('0X')+2:]
+    return g
 
 Genome.merge=staticmethod(merge)
 Genome.randomGenome=staticmethod(randomGenome)
