@@ -7,8 +7,9 @@ from creatures import templates
 import random
 
 class Animation():
-    scenario: life.Scenario
-    def __init__(self, scenario: life.Scenario):
+    scenario: life.Scene
+    
+    def __init__(self, scenario: life.Scene):
         self.world=scenario.world
         self.creatures=scenario.creatures
         self.scenario=scenario
@@ -46,7 +47,8 @@ class Animation():
             stdscr.refresh()
             inKey=stdscr.getch()
             if inKey==ord('q'): over=True
-            if inKey==ord('s'): life.saveWorld(self.world, self.creatures, steps, f'species/{species[0][0]} {steps}.txt')
+            if inKey==ord('s'): life.saveWorld(self.scenario, f'{species[0][0]} {species[1][0]} {steps}')
+                #life.saveCreatures(self.world, self.creatures, steps, f'species/{species[0][0]} {steps}.txt')
             if inKey==curses.KEY_UP: viewY = max(viewY-1, 0)
             if inKey==curses.KEY_DOWN: viewY = min(viewY+1, mapHeight-viewHeight)
             if inKey==curses.KEY_LEFT: viewX = max(viewX-1, 0)
