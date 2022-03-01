@@ -3,10 +3,11 @@ from creatures.genome import *
 from creatures.creature import *
 from world.map import *
 
+map = Map(20, 10)
+
 class testMap(unittest.TestCase):
     def test(self):
         # make a map
-        map = Map(20, 10)
         centerNode = map.nodes[105]
         neighbors = [neighbor.index for neighbor in centerNode.neighbors]
         self.assertTrue(neighbors == [104, 114, 115, 106, 95, 94])
@@ -15,7 +16,8 @@ class testMap(unittest.TestCase):
         nextNode=map.nodes[135]
         dist=Map.getDistance(centerNode, nextNode)
         self.assertTrue(dist == 3)
-        fleePath=Map.findPathAway(nextNode, centerNode, safeDistance=7)
+
+        fleePath=Map.fleePath(nextNode, centerNode, safeDistance=7)
         self.assertTrue(Map.getDistance(centerNode, fleePath[-1])==7)
 
         # map.nodes[81].obstruction = 'something'
