@@ -29,37 +29,37 @@ class MapNode():
         self.y = y
         self.z = z
 
-def calcVisionTree(startingNode: MapNode, distance: int):
-    mergedDict = {n:True for n in startingNode.neighbors + [startingNode]}
-    visionTree = [[[node]] + [[] for i in range(distance - 1)] for node in startingNode.neighbors]
+    def calcVisionTree(self, distance: int):
+        mergedDict = {n:True for n in self.neighbors + [self]}
+        visionTree = [[[node]] + [[] for i in range(distance - 1)] for node in self.neighbors]
 
-    for i in range(distance - 1):
-        visionLayer = {}
-        for t in range(len(visionTree)):
-            nodesThisTree = 0
-            for n in visionTree[t][i]:
-                # n is a node
-                for j in range(len(n.neighbors)):
-                    nextNode = n.neighbors[(j + t + 3 * (t % 2)) % len(n.neighbors)]
-                    if nextNode not in mergedDict.keys():
-                        if nextNode not in visionLayer.keys():
-                            visionLayer[nextNode] = t
-                            # print (nextNode.index, t, j)
-                            nodesThisTree += 1
-                    if nodesThisTree > i + 1:
-                        break
-        # print (["{0}, {1}".format(key.index, visionLayer[key]) for key in visionLayer.keys()])
-        for node in visionLayer.keys():
-            cone = visionLayer[node]
-            visionTree[cone][i+1].append(node)
-            mergedDict[node] = True
-    # for cone in range(len(visionTree)):
-    #     print ("cone {0}".format(cone))
-    #     for sightrange in range(len(visionTree[cone])):
-    #         visionTree[cone][sightrange].sort(key = lambda node: node.index)
-    #         print ([node.index for node in visionTree[cone][sightrange]])
-    
-    return visionTree
+        for i in range(distance - 1):
+            visionLayer = {}
+            for t in range(len(visionTree)):
+                nodesThisTree = 0
+                for n in visionTree[t][i]:
+                    # n is a node
+                    for j in range(len(n.neighbors)):
+                        nextNode = n.neighbors[(j + t + 3 * (t % 2)) % len(n.neighbors)]
+                        if nextNode not in mergedDict.keys():
+                            if nextNode not in visionLayer.keys():
+                                visionLayer[nextNode] = t
+                                # print (nextNode.index, t, j)
+                                nodesThisTree += 1
+                        if nodesThisTree > i + 1:
+                            break
+            # print (["{0}, {1}".format(key.index, visionLayer[key]) for key in visionLayer.keys()])
+            for node in visionLayer.keys():
+                cone = visionLayer[node]
+                visionTree[cone][i+1].append(node)
+                mergedDict[node] = True
+        # for cone in range(len(visionTree)):
+        #     print ("cone {0}".format(cone))
+        #     for sightrange in range(len(visionTree[cone])):
+        #         visionTree[cone][sightrange].sort(key = lambda node: node.index)
+        #         print ([node.index for node in visionTree[cone][sightrange]])
+        
+        self.visionTree=visionTree
 
 class Map():
     def __init__(self, mapWidth, mapHeight):
@@ -84,7 +84,7 @@ class Map():
                     node.neighbors.append(self.nodes[(i + n) % self.totalNodes])
 
         for node in self.nodes:
-            node.visionTree = calcVisionTree(node, 7)
+            node.calcVisionTree(7)
     
     def populateGrass(self, value: int=10, density: float=0.1):
         for node in self.nodes:
@@ -124,7 +124,7 @@ class Map():
             print(''.join(["  {0}  ".format(showVision(y + self.mapHeight + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
 
     @staticmethod
-    def findPathAway(startNode: MapNode, fleeFrom:MapNode, safeDistance:int=5):
+    def fleePath(startNode: MapNode, fleeFrom:MapNode, safeDistance:int=5):
         # modified A*
         maxout=100 # if openlist exceeds this length, return []
         class nodeOption():
