@@ -21,7 +21,7 @@ class Scene():
         steps: int=0,
         name: str=''
     ):
-        self.world=world or Scene._basicWorld()
+        self.world=world or Scene.basicWorld()
         self.creatures=creatures
         self.steps=steps
         self.name=name
@@ -31,7 +31,7 @@ class Scene():
             creature.moveTimer = random.random() * 60
             creature.thinkTimer = random.random() * 60
             if creature.location.index == -1:
-                creature.location=random.choice(world.nodes)
+                creature.location=random.choice(self.world.nodes)
 
         def step():
             cycle(self.world, self.creatures)
@@ -39,7 +39,7 @@ class Scene():
             if self.stepFunction: self.stepFunction()
         self.step = step
 
-    def _basicWorld():
+    def basicWorld():
         return Map(80,40).populateGrass(value=20, density=0.2)
 
 class Scenarios():
@@ -53,7 +53,7 @@ class Scenarios():
             random.choice(world.nodes).resource = Resource(ResourceType.meat, value)
 
     def random_creatures(world: Map=None) -> Scene:
-        world=world
+        world=world or Scene.basicWorld()
         return Scene(
             world=world, 
             creatures=set([
@@ -65,7 +65,7 @@ class Scenarios():
         )
 
     def herbivores(world: Map=None) -> Scene:
-        world=world
+        world=world or Scene.basicWorld()
         return Scene(
             world=world, 
             creatures=set([
@@ -77,7 +77,7 @@ class Scenarios():
         )
 
     def scavengers(world: Map=None) -> Scene:
-        world=world
+        world=world or Scene.basicWorld()
         return Scene(
             world=world, 
             creatures=set([
@@ -88,7 +88,7 @@ class Scenarios():
             name='scavengers'
         )
     def predator_prey(world: Map=None) -> Scene: 
-        world=world
+        world=world or Scene.basicWorld()
         return Scene(
             world=world, 
             creatures=set([
@@ -104,7 +104,7 @@ class Scenarios():
         )
 
     def superdeer(world: Map=None) -> Scene: 
-        world=world
+        world=world or Scene.basicWorld()
         return Scene(
             world=world, 
             creatures=set([
@@ -119,19 +119,21 @@ class Scenarios():
             name='superdeer'
         )
 
-    def wolfDen(world: Map=None) -> Scene:
-        world=world
+    def wolfDen(world: Map=None, creatures: set[Creature]=None) -> Scene:
+        world=world or Scene.basicWorld()
         optimalWolves: int=20
         optimalDeer: int=200
 
-        wolves=[
-                templates.carnivore(mutate=True)
-                for n in range(optimalWolves)
-            ]
-        deers=[
-                templates.herbivore(mutate=True)
-                for n in range(optimalDeer)
-            ]
+        if not creatures:
+            wolves=[
+                    templates.carnivore(mutate=True)
+                    for n in range(optimalWolves)
+                ]
+            deers=[
+                    templates.herbivore(mutate=True)
+                    for n in range(optimalDeer)
+                ]
+            creatures = set(wolves + deers)
 
         def maintainPopulations(scene: Scene):
             if scene.steps % 50 == 0:
@@ -147,7 +149,7 @@ class Scenarios():
 
         scene=Scene(
             world=world,
-            creatures=set(wolves+deers),
+            creatures=creatures,
             name='wolfden'
         )
         scene.stepFunction=lambda: maintainPopulations(scene)
@@ -214,6 +216,9 @@ def saveWorld(scene: Scene, filename: str):
             'mapnodes': [{
                 'index': node.index,
                 'neighbornodes': [n.index for n in node.neighbors],
+                'x': node.x,
+                'y': node.y,
+                'z': node.z,
                 'grass': node.resource.value if node.resource and node.resource.type == ResourceType.grass else 0,
                 'meat': node.resource.value if node.resource and node.resource.type == ResourceType.meat else 0,
                 'occupant': (
@@ -223,6 +228,43 @@ def saveWorld(scene: Scene, filename: str):
             } for node in scene.world.nodes]
         },
         file, indent=4)
+
+def loadWorld(filename: str) -> Scene:
+    if filename[-6:] != '.world':
+        filename += '.world'
+
+    with open(dirname + filename) as file:
+        data=json.load(file)
+        scenarioName=data['scenario']
+        mapnodes=data['mapnodes']
+        world=Map(0,0)
+        creatures: set[Creature]=set()
+        
+        for node in mapnodes:
+            newnode=MapNode(int(node['index']), neighbors=node['neighbornodes'], x=node['x'], y=node['y'], z=node['z'])
+            newnode.occupant=node['occupant']
+            world.nodes.append(newnode)
+        
+        for node in world.nodes:
+            node.neighbors=[world.nodes[n] for n in node.neighbors]           
+            if node.occupant:
+                # will automatically set this node.occupant=Creature
+                creatures.add(Creature.fromJson(node.occupant, world.nodes[node.occupant['location']]))
+        
+        for node in world.nodes:
+            node.calcVisionTree(10) 
+
+        world.mapWidth=int(max([node.x for node in world.nodes]))
+        world.mapHeight=int(max([node.y for node in world.nodes]))
+
+        if scenarioName == 'wolfden':
+            return Scenarios.wolfDen(world=world)
+        else:
+            return Scene(
+                name=scenarioName,
+                world=world,
+                creatures=creatures
+            )
 
 def loadCreatures(filename: str) -> Scene:
     print(f'loading {filename}')
