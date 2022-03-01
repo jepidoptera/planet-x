@@ -2,7 +2,7 @@ from fileinput import filename
 import sys, getopt
 from world import life
 still = True
-filename=''
+filename= '' # 'deersheep tigerwolf 225'
 # dirname='species/'
 scenario: life.Scene = None
 
@@ -23,10 +23,10 @@ for arg, value in args:
         elif value == 'random':
             scenario = life.Scenarios.random_creatures()
 
-if not scenario: scenario = life.Scenarios.wolfDen()
-
 if filename:
-    scenario=life.loadWorld(life.dirname + filename)
+    scenario=life.loadWorld(filename)
+
+if not scenario: scenario = life.Scenarios.wolfDen()
 
 if still:
     from world.stilllife import TextWorld
