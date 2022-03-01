@@ -53,6 +53,10 @@ class MemNeuron(Neuron):
     def clear(self):
         self.activation = self.memState * self.strength
 
+class SelfNeuron(Neuron):
+    def clear(self):
+        self.sense(self)
+
 class Axon():
     def __init__(self, input: Neuron, output: Neuron, factor: float):
         self.input = input
@@ -318,8 +322,7 @@ class Creature():
 
     def flee(self, other):
         self.fear = other
-        away=Map.findPathAway(self.location, other.location, safeDistance=7)
-        self.path=away
+        self.path=Map.fleePath(self.location, other.location, safeDistance=9)
         # vvv saved this old code just to compare with the elegance of this ^^^
         # toOther=Map.findPath(self.location, other.location)
         # self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
@@ -355,10 +358,8 @@ class Creature():
         self._dead=True
 
     def think(self) -> str:
-        if self.speciesName == 'tigerwolf':
-            er = 1
         
-        options = self.processEnvironment(self.getVisionRanges())
+        options = self.processVision(self.getVisionRanges())
         # exhaustion
         options.append(ActionOption(self.rest, None, self.sprintMoves / self.stamina, netIndex['action_rest']))
         # wandering
@@ -402,7 +403,7 @@ class Creature():
         for neuron in self.allNeurons:
             neuron.clear()
 
-    def processEnvironment(self, vision:list[list[MapNode]]) -> list[ActionOption]:
+    def processVision(self, vision:list[list[MapNode]]) -> list[ActionOption]:
         actionOptions: list[ActionOption] = []
 
         self.clearInputs()
@@ -457,6 +458,9 @@ class Creature():
             netIndex['action_attack'].activation += netIndex['action_eat'].activation
             netIndex['action_eat'].clear()
             if self.energy < self.size: netIndex['action_mate'].clear()
+            if netIndex['creature_similarity'].activation < 0.5: 
+                netIndex['action_mate'].clear()
+                # self.energy -= 1
 
         out = max(*[self.actionNeurons], key=lambda n: n.activation)
         return ActionOption(out.action, target, out.activation * magnitude, out)
