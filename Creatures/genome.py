@@ -311,12 +311,13 @@ def decode(genes: str) -> Genome:
         g.stats[stat].value=int(genes[2*i:2*i+2], 16)
     g.phenomize()
     brain=genes[genes.index('0X')+2:]
+    g.brain=brain
     return g
 
 Genome.merge=staticmethod(merge)
 Genome.randomGenome=staticmethod(randomGenome)
 Genome.mergeString=staticmethod(mergeString)
-
+Genome.decode=staticmethod(decode)
 # in search of a function that will repeat an average of x times,
 # but always has a chance of repeating 0 times.
 
