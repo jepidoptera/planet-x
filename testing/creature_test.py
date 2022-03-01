@@ -7,11 +7,6 @@ from world.map import *
 map = Map(20, 10)
 
 class testCreature(unittest.TestCase):
-    def test(self):
-        self.test_predation()
-        self.test_herbivory()
-        self.test_courtship()
-        self.test_crossbreed()
 
     def test_predation(self):
         map.clear()
