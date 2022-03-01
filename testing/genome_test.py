@@ -3,7 +3,7 @@ from creatures.genome import *
 
 class testGenome(unittest.TestCase):
 
-    def test(self):
+    def testMerging(self):
         gene1 = Genome(
             deadliness=1, 
             speed=1, 
@@ -52,8 +52,6 @@ class testGenome(unittest.TestCase):
             ]
         ]
         self.assertTrue(gene3.mutations == 9)
-
-        self.testEncoding()
 
     def testEncoding(self):
         g=randomGenome()
