@@ -151,19 +151,19 @@ class Genome():
         return self._fertility
 
     @property
-    def meatEating(self) -> float:
+    def meateating(self) -> float:
         return (self._meateating + 1) ** 2 / (1 + self._meateating + self._planteating / 2)
 
     @property
-    def plantEating(self) -> float:
+    def planteating(self) -> float:
         return (self._planteating + 1) ** 2 / (1 + self._meateating / 2 + self._planteating)
 
     @property
-    def sightRange(self) -> int:
+    def sightrange(self) -> int:
         return self._sightrange
 
     @property
-    def sightField(self) -> int:
+    def sightfield(self) -> int:
         return self._sightfield
 
     @property
@@ -227,10 +227,10 @@ class Genome():
             f'intelligence: {self.intelligence}', 
             f'longevity: {self.longevity}', 
             f'fertility: {self.fertility}', 
-            f'sight range: {self.sightRange}', 
-            f'field of view: {self.sightField}', 
-            f'meat eating: {self.meatEating}', 
-            f'plant eating: {self.plantEating}'
+            f'sight range: {self.sightrange}', 
+            f'field of view: {self.sightfield}', 
+            f'meat eating: {self.meateating}', 
+            f'plant eating: {self.planteating}'
         ], sep='\n')
 
     def printRawStats(self):
@@ -329,15 +329,27 @@ candidates=[
     lambda rate, mutations: random.random()*rate**1.4*1.4 > random.random()*(mutations + 1)
     # 2/3, 4/9, 8/27
 ]
+
+def mutationsPer(rate):
+    missed=0
+    hit=0
+    while missed < rate:
+        if (rate - missed) * random.random() > random.random():
+            hit += 1
+        else:
+            missed += 1
+    return hit ** 0.5
+
 def avgMutations(rate, f):
     avg=0
-    f=candidates[f]
-    for _ in range(1000):
-        mutations=0
-        while f(rate, mutations):
-            mutations += 1
+    reps=1000
+    # f=candidates[f]
+    for _ in range(reps):
+        mutations=f(rate)
+        # while f(rate, mutations):
+        #     mutations += 1
         avg += mutations
-    return avg / 1000
+    return avg / reps
 
 def convergence(x):
     s = 0
