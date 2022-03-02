@@ -2,6 +2,9 @@ from world.map import *
 from creatures.creature import *
 from creatures.genome import *
 from creatures import templates
+from testing import creature_test, genome_test, map_test
+
+creature_test.testCreature.test_brain()
 
 mapWidth = 30
 mapHeight = 20
