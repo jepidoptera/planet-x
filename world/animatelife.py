@@ -30,13 +30,13 @@ class Animation():
 
         viewX: int=0
         viewY: int=0
-        viewWidth: int=80
-        viewHeight: int=40
         mapHeight: int=self.world.mapHeight
         mapWidth: int=self.world.mapWidth
 
         while not over:
-
+            viewWidth: int=curses.COLS-1
+            viewHeight: int=curses.LINES-5
+            
             self.scenario.step()
             steps=self.scenario.steps
 
@@ -56,10 +56,10 @@ class Animation():
             if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(map.nodes)))
             if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(map.nodes)))
             
-            for y in range(viewY, viewY + min(curses.LINES, mapHeight-1)):
+            for y in range(viewY, viewY + min(mapHeight-1, viewHeight)):
                 row = [
                     self.world.nodes[x*mapHeight*2 + (y % 2)*mapHeight + y//2] 
-                    for x in range(viewX, viewX + min(curses.COLS//5 - 2, viewWidth//2-1))
+                    for x in range(viewX, viewX + viewWidth//5-3)
                 ]
                 line = '' if y % 2 == 0 else '   '
                 for node in row:
@@ -80,4 +80,3 @@ class Animation():
             stdscr.addstr(viewHeight + 1, 0, f'viewport: {viewX} {viewY}')
             for y in range(min(3, len(species))):
                 stdscr.addstr(viewHeight+2+y, 0, f'{species[y][0]}: {species[y][1]}   ')
-
