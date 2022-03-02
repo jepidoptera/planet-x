@@ -9,26 +9,25 @@ map = Map(20, 10)
 class testCreature(unittest.TestCase):
 
     def test_brain(self):
-        creature=templates.empty(map.nodes[114])
-        creature.direction=0
-        creature.brain=str(DoubleAxon(
-            input=[netIndex['self_sometimes'], netIndex['memory_6']],
-            output=netIndex['action_move'],
-            threshold=0.5,
-            operator=DoubleAxon.operators['and'],
-            factor=1.0
-        ))+str(Axon(
-            input=netIndex['self_birth'],
-            output=netIndex['memory_6'],
-            factor=1.0
-        ))+str(Axon( # don't wander
-            input=netIndex['self_always'],
-            output=netIndex['action_wander'],
-            factor=-1.0
-        ))
-        creature.unpackGenome(creature.brain)
+        creature=templates.empty(
+            map.nodes[114],
+            brain=str(DoubleAxon(
+                input=[netIndex['self_sometimes'], netIndex['memory_6']],
+                output=netIndex['action_move'],
+                threshold=0.5,
+                operator=DoubleAxon.operators['and'],
+                factor=1.0
+            ))+str(Axon(
+                input=netIndex['self_birth'],
+                output=netIndex['memory_6'],
+                factor=1.0
+            ))+str(Axon( # don't wander
+                input=netIndex['self_always'],
+                output=netIndex['action_wander'],
+                factor=-1.0
+            ))
+        )
         self.assertTrue(type(creature.selfAxons[0]) == DoubleAxon)
-        creature.processStimulus('birth')
 
         creature.think()
         creature.animate()
@@ -38,17 +37,20 @@ class testCreature(unittest.TestCase):
     def test_predation(self):
         map.clear()
         herbivore = templates.herbivore(map.nodes[74])
-        herbivore.direction=2
         carnivore = templates.carnivore(map.nodes[114], energy=100)
+        # face each other
+        herbivore.direction=2
         carnivore.direction=4
         herbivore_action=herbivore.think()
         carnivore_action=carnivore.think()
         self.assertTrue(herbivore_action == 'action_flee')
         self.assertTrue(carnivore_action == 'action_attack')
         for n in range(5):
-            herbivore_action=herbivore.animate()
-        self.assertTrue(Map.getDistance(herbivore.location, carnivore.location) > 5)
+            herbivore_action=herbivore.think()
+            herbivore.animate()
+        self.assertTrue(Map.getDistance(herbivore.location, carnivore.location) > 8)
         
+        # nice work, now it's time to get eaten
         herbivore.location=map.nodes[74]
 
         for n in range(5):
