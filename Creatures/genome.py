@@ -190,22 +190,42 @@ class Genome():
     def longevity(self):
         return self._longevity
 
-    def mutate(self):
+    def mutate(self, number: int=0, mutationType: str=''):
         def modString(string: str, char: chr, position: int) -> str:
             return string[:position] + char + string[position+1:]
 
-        newMutations=0
-        # this will give something pretty close to averaging mutationRate mutations
-        # while still having some chance of zero. it was the best I could come up with
-        while random.random()*self.mutationRate**1.4*1.4 > random.random()*(newMutations + 1):
+        if number == 0: number=int(random.random() * random.random() * self.mutationRate * 4)
+        mutationType=mutationType.lower()
+        for _ in range(number):
             self.mutations += 1
             if self.mutations % 10 == 0:
                 self.variant=modString(self.variant, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random()*len(self.variant)))
 
-            brainMutation = int(random.random() * 2)
+            brainMutation = (
+                True if mutationType in ['brain', 'addaxon', 'deleteaxon', 'doubleaxon'] 
+                else int(random.random() * 2)
+            )
 
             if (brainMutation):
-                self.brain = modString(self.brain, random.choice('1234567890abcdef'), int(random.random() * len(self.brain)))
+                addAxon = (
+                    True if mutationType in ['addaxon', 'doubleaxon'] 
+                    else int(random.random()*1.5)
+                )
+                if addAxon:
+                    newAxon=''.join([random.choice('1234567890abcdef') for _ in range(8)])
+                    doubleAxon=True if mutationType=='doubleaxon' else int(random.random()*1.5)
+                    if doubleAxon:
+                        newAxon='FF' + newAxon[2:]
+                    insertionPoint=int(random.random() * len(self.brain)/8)*8
+                    self.brain=self.brain[:insertionPoint] + newAxon + self.brain[insertionPoint:]
+                else:
+                    deleteAxon=True if mutationType == 'deleteaxon' else int(random.random()*1.5)
+                    if deleteAxon:
+                        if len(self.brain) < 8: return # this should not happen, but
+                        deletionPoint=int(random.random() * (len(self.brain)-8)/8)*8
+                        self.brain=self.brain[:deletionPoint] + self.brain[deletionPoint + 8:]
+                    else:
+                        self.brain=modString(self.brain, random.choice('1234567890abcdef'), int(random.random() * len(self.brain)))
             else:
                 self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
