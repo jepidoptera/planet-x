@@ -120,9 +120,9 @@ class Scenarios():
         )
 
     def wolfDen(world: Map=None, creatures: set[Creature]=None) -> Scene:
-        world=world or Scene.basicWorld()
-        optimalWolves: int=20
-        optimalDeer: int=200
+        world=world or Map(120, 60).populateGrass(20, 0.2)
+        optimalWolves: int=40
+        optimalDeer: int=400
 
         if not creatures:
             wolves=[
@@ -143,8 +143,8 @@ class Scenarios():
                 wolves.sort(key=lambda wolf: wolf.offspringCount * 5000 + wolf.age + wolf.energy, reverse=True)
                 for n in range(optimalDeer - len(deers)):
                     scene.creatures.add(templates.cross(deers[0], deers[1], location=random.choice(world.nodes), mutate=True))
-                for n in range(optimalWolves - len(wolves)):
-                    scene.creatures.add(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes), mutate=True))
+                # for n in range(optimalWolves - len(wolves)):
+                #     scene.creatures.add(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes), mutate=True))
             Scenarios._growGrass(world, 2, 20)
 
         scene=Scene(
