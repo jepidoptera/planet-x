@@ -205,7 +205,9 @@ class Creature():
         self.energy=energy
         self.sprints=0
         self.rests=0
-        self._metabolism=(sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) for g in genome])) / (3500 * len(genome))
+        self._metabolism=(
+            sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) for g in genome])
+            + len(self.brain)/8) / (3500 * len(genome))
 
         self.direction=int(random.random() * len(self.location.neighbors))
         self.thinkTimer=int(random.random() * self.intelligence)
@@ -265,7 +267,7 @@ class Creature():
 
     @property
     def speed(self):
-        return self.speed * (2 if self.sprints else 1)
+        return self._speed * (2 if self.sprints else 1)
 
     def fromHex(self, hexcode) -> Axon:
 
@@ -451,7 +453,7 @@ class Creature():
         # self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
         # self.path=[self.location.neighbors[self.direction]]
 
-    def sprint(self):
+    def sprint(self, _):
         self.sprints += self.stamina
         self.energy -= 1
 
@@ -490,9 +492,9 @@ class Creature():
 
         options += self.processVision(self.getVisionRanges())
         # exhaustion
-        options.append(ActionOption(Creature.rest, self, self.sprints / self.stamina, netIndex['action_rest']))
+        # options.append(ActionOption(Creature.rest, self, self.sprints / self.stamina, netIndex['action_rest']))
 
-        action=max(*options, key=lambda option: option.weight)
+        action=max(options, key=lambda option: option.weight)
         # if action.target:
         action.action(self, action.target)
         # else:
@@ -682,7 +684,8 @@ Creature.actionNeurons=list[Neuron]([
     Neuron(NeuronType.action, name='action_move', action=Creature.moveForward),
     Neuron(NeuronType.action, name='action_sprint', action=Creature.sprint),
     Neuron(NeuronType.action, name='action_rest', action=Creature.rest, bias=0.1),
-    Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.1) 
+    Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.1),
+    Neuron(NeuronType.action, name='action_continue', action=lambda x, y: x, bias=0.2)
 ])
 
 # these are class level placeholders
