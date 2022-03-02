@@ -8,6 +8,33 @@ map = Map(20, 10)
 
 class testCreature(unittest.TestCase):
 
+    def test_brain(self):
+        creature=templates.empty(map.nodes[114])
+        creature.direction=0
+        creature.brain=str(DoubleAxon(
+            input=[netIndex['self_sometimes'], netIndex['memory_6']],
+            output=netIndex['action_move'],
+            threshold=0.5,
+            operator=DoubleAxon.operators['and'],
+            factor=1.0
+        ))+str(Axon(
+            input=netIndex['self_birth'],
+            output=netIndex['memory_6'],
+            factor=1.0
+        ))+str(Axon( # don't wander
+            input=netIndex['self_always'],
+            output=netIndex['action_wander'],
+            factor=-1.0
+        ))
+        creature.unpackGenome(creature.brain)
+        self.assertTrue(type(creature.selfAxons[0]) == DoubleAxon)
+        creature.processStimulus('birth')
+
+        creature.think()
+        creature.animate()
+
+        self.assertTrue(creature.location.index == 113)
+
     def test_predation(self):
         map.clear()
         herbivore = templates.herbivore(map.nodes[74])
