@@ -1,7 +1,21 @@
+from operator import indexOf
 import unittest
+from webbrowser import GenericBrowser
 from creatures.genome import *
 
 class testGenome(unittest.TestCase):
+
+    def testMutations(self):
+        gene1=randomGenome()
+        brainLength=len(gene1.brain)
+        self.assertTrue(brainLength % 8 == 0)
+        gene1.mutate(1, 'addAxon')
+        self.assertTrue(len(gene1.brain) == brainLength + 8)
+        gene1.mutate(1, 'deleteAxon')
+        self.assertTrue(len(gene1.brain) == brainLength)
+        gene1.mutate(1, 'doubleAxon')
+        self.assertTrue(len(gene1.brain) == brainLength + 8)
+        self.assertTrue(gene1.brain.find('FF') >= 0)
 
     def testMerging(self):
         gene1 = Genome(
