@@ -185,7 +185,7 @@ class Creature():
 
         genome=self.genome
         self.deadliness=sum([g.deadliness for g in genome])/len(genome)
-        self.speed=sum([g.speed for g in genome])/len(genome)
+        self._speed=sum([g.speed for g in genome])/len(genome)
         self.fortitude=sum([g.fortitude for g in genome])/len(genome)
         self.fertility=sum([g.fertility for g in genome])/len(genome)
         self._longevity=sum([g.longevity for g in genome])/len(genome)
@@ -203,12 +203,13 @@ class Creature():
         self.offspringCount=offspringCount
         self._health=self.fortitude
         self.energy=energy
-        self.sprintMoves=0
+        self.sprints=0
+        self.rests=0
         self._metabolism=(sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) for g in genome])) / (3500 * len(genome))
 
         self.direction=int(random.random() * len(self.location.neighbors))
         self.thinkTimer=int(random.random() * self.intelligence)
-        self.moveTimer=int(random.random() * self.speed)
+        self.moveTimer=int(random.random() * self._speed)
 
         # instantiate memory neurons specific to this creature 
         # the rest are shared across all creatures to save space
@@ -228,7 +229,7 @@ class Creature():
     @property 
     def metabolism(self) -> float:
         # return self.__metabolism + (self.__intelligence + self.__deadliness + self.__speed + self.__size) / 4
-        return self._metabolism*(max(self.sprintMoves, 1)/self.stamina)
+        return self._metabolism # + self._metabolism*(max(self.sprints, 1))
 
     @property
     def location(self) -> MapNode:
@@ -261,6 +262,10 @@ class Creature():
             self.die()
             return True
         return False
+
+    @property
+    def speed(self):
+        return self.speed * (2 if self.sprints else 1)
 
     def fromHex(self, hexcode) -> Axon:
 
@@ -363,6 +368,8 @@ class Creature():
         if self.energy < 0: 
             self.health += self.energy
             self.energy=0
+        # un sprint
+        self.sprints = max(self.sprints-1, 0)
 
         if self.food and self.location.resource == self.food:
             bitesize=1
@@ -418,10 +425,8 @@ class Creature():
                 self.location=nextMove
                 self.location.occupant=self
                 self.direction=min(self.direction, len(self.location.neighbors)-1)
-                self.sprintMoves += 1
             return 'action_move'
         else:
-            self.sprintMoves=min(self.sprintMoves - 1, 0)
             return 'action_rest'
             
     def seekFood(self, foodLocation: MapNode):
@@ -445,6 +450,10 @@ class Creature():
         # toOther=Map.findPath(self.location, other.location)
         # self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
         # self.path=[self.location.neighbors[self.direction]]
+
+    def sprint(self):
+        self.sprints += self.stamina
+        self.energy -= 1
 
     def seekMate(self, other):
         self.mate=other
@@ -481,7 +490,7 @@ class Creature():
 
         options += self.processVision(self.getVisionRanges())
         # exhaustion
-        options.append(ActionOption(Creature.rest, self, self.sprintMoves / self.stamina, netIndex['action_rest']))
+        options.append(ActionOption(Creature.rest, self, self.sprints / self.stamina, netIndex['action_rest']))
 
         action=max(*options, key=lambda option: option.weight)
         # if action.target:
@@ -591,7 +600,7 @@ class Creature():
 
     def printStats(self):
         print('deadliness: ', self.deadliness)
-        print('speed: ', self.speed)
+        print('speed: ', self._speed)
         print('fortitude: ', self.fortitude)
         print('stamina: ', self.stamina)
         print('meat eating: ', self.meateating)
@@ -609,21 +618,6 @@ class Creature():
     def toJson(self) -> dict:
         return {
             'genomes': [self.genome[n].encode() for n in range(len(self.genome))],
-            # {
-            #     'mutations': self.genome[n].mutations,
-            #     'deadliness': self.genome[n]._deadliness,
-            #     'speed': self.genome[n]._speed,
-            #     'stamina': self.genome[n]._stamina,
-            #     'fortitude': self.genome[n]._fortitude,
-            #     'intelligence': self.genome[n]._intelligence,
-            #     'longevity': self.genome[n]._longevity,
-            #     'fertility': self.genome[n]._fertility,
-            #     'meateating': self.genome[n]._meateating,
-            #     'planteating': self.genome[n]._planteating,
-            #     'sightrange': self.genome[n]._sightrange,
-            #     'sightfield': self.genome[n]._sightfield,
-            #     'brain': self.genome[n].brain,
-            # } 
             'age': self.age,
             'brain': self.brain,
             'energy': self.energy,
@@ -637,21 +631,6 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
         location=location,
         genome=[
             Genome.decode(g)
-            # (
-            #     mutations=genome['mutations'],
-            #     deadliness=genome['deadliness'],
-            #     speed=genome['speed'],
-            #     stamina=genome['stamina'],
-            #     fortitude=genome['fortitude'],
-            #     intelligence=genome['intelligence'],
-            #     longevity=genome['longevity'],
-            #     fertility=genome['fertility'],
-            #     meateating=genome['meateating'],
-            #     planteating=genome['planteating'],
-            #     sightrange=genome['sightrange'],
-            #     sightfield=genome['sightfield'],
-            #     brain=genome['brain'],
-            # ) 
             for g in j['genomes']
         ], 
         brain=j['brain'] if 'brain' in j else '',
@@ -676,7 +655,7 @@ Creature.selfNeurons=list[Neuron]([
     Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy * 0.01),
     Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health),
     Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age/self.longevity),
-    Neuron(NeuronType.self, name='self_sprints', sense=lambda self: self.sprintMoves),
+    Neuron(NeuronType.self, name='self_sprints', sense=lambda self: 1 if self.sprints else 0),
     Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
     Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack
     Neuron(NeuronType.self, name='self_always', sense=lambda self: True),
@@ -701,6 +680,7 @@ Creature.actionNeurons=list[Neuron]([
     Neuron(NeuronType.action, name='action_turnleft', action=Creature.turnLeft),
     Neuron(NeuronType.action, name='action_turnright', action=Creature.turnRight),
     Neuron(NeuronType.action, name='action_move', action=Creature.moveForward),
+    Neuron(NeuronType.action, name='action_sprint', action=Creature.sprint),
     Neuron(NeuronType.action, name='action_rest', action=Creature.rest, bias=0.1),
     Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.1) 
 ])
