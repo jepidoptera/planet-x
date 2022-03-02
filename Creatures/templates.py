@@ -10,17 +10,25 @@ def randomAxon():
 def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     herbivore_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
+        # Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+        # DoubleAxon(
+        #     input=[netIndex['self_energy'], netIndex['creature_similarity']],
+        #     output=netIndex['action_mate'],
+        #     operator=DoubleAxon.operators['and'],
+        #     threshold=0.9,
+        #     factor=1.0
+        # ),
+        # Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
         Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
-        Axon(netIndex['memory_7'], netIndex['relay_7'], 0.9),
+        Axon(netIndex['memory_7'], netIndex['relay_7'], 0.5),
         Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
         Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
         Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
         Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
         Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
+        Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
         Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
         Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
     ]
@@ -149,6 +157,30 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         )], 
         speciesName='tigerwolf',
         energy=energy,
+        mutate=mutate
+    )
+
+def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+    return Creature(
+        location=location,
+        genome=[Genome(
+            deadliness=1, 
+            speed=1, 
+            stamina=1, 
+            fortitude=1, 
+            intelligence=1, 
+            longevity=1, 
+            fertility=1, 
+            meateating=1, 
+            planteating=1, 
+            sightrange=4, 
+            sightfield=4, 
+            # brai'faecd86fcc85cb780605854211269566f857727c852876a4aba33057cad8b2b34ce3ffc48f193c143fce1315a975ce3a1514d7bed1ac9d96241fed48',
+            brain='',
+            variant='emptymind'
+        )], 
+        speciesName='?nothing?',
+        energy=100,
         mutate=mutate
     )
 
