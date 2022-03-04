@@ -27,10 +27,11 @@ class testCreature(unittest.TestCase):
                 factor=-1.0
             ))
         )
+        creature.direction=0
         self.assertTrue(type(creature.selfAxons[0]) == DoubleAxon)
 
-        creature.think()
-        creature.animate()
+        thought=creature.think()
+        action=creature.animate()
 
         self.assertTrue(creature.location.index == 113)
 
