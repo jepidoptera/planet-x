@@ -46,8 +46,12 @@ def printBrain(genome):
             print (f'{axon[0]} {axon[4]} {axon[1]} -> {axon[2]}, threshold={axon[3]} factor={axon[5]}')
 
 
+def printStats(genome):
+    Genome.decode(genome).printRawStats()
+    
 # scene=loadWorld('deersheep tigerwolf 902643.world')
 # wolves=list(filter(lambda c: c.meateating > c.planteating, scene.creatures))
 
 brain='0014ffffed5688280325c0000325ca001126ffff11f6ffffb66f181cFF1f9fe7FF00e50b0a1affff0a1af9ff22e6d896a53c3f4a0b1dffff1a3df1723b24ffff2b18ffff2b18ffff0b180fff0b18ffff2b18ffff092b0000132aff5f'
 printBrain(brain)
+
