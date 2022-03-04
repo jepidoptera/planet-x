@@ -225,7 +225,7 @@ class Scenarios():
         def releaseFood(scene: Scene):
             if scene.steps % 10 == 0:
                 scene.creatures.add(templates.herbivore(location=random.choice(world.nodes), energy=100))
-            # Scene.growGrass(world, 2, 20)
+            Scene.growGrass(world, 1, 20)
 
         scene=Scene(
             world=world,
@@ -349,6 +349,8 @@ def loadWorld(filename: str) -> Scene:
             return Scenarios.wolfDen(world=world, creatures=creatures, steps=steps)
         elif scenarioName == 'immortal wolves':
             return Scenarios.immortal_wolves(world=world, creatures=creatures, steps=steps)
+        elif scenarioName == 'sacrificial deer':
+            return Scenarios.sacrificial_deer(world=world, creatures=creatures, steps=steps)
         else:
             return Scene(
                 name=scenarioName,
