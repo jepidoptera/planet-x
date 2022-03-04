@@ -11,27 +11,30 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     herbivore_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         Axon(netIndex['action_flee'], netIndex['memory_0'], 1.0),
-        # Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        # DoubleAxon(
-        #     input=[netIndex['self_energy'], netIndex['creature_similarity']],
-        #     output=netIndex['action_mate'],
-        #     operator=DoubleAxon.operators['and'],
-        #     threshold=0.9,
-        #     factor=1.0
-        # ),
-        # Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
-        # Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
-        # Axon(netIndex['memory_7'], netIndex['relay_7'], 0.5),
-        # Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
-        # Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
-        # Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
-        # Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
-        # Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
-        # Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
-        # Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
-        # Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
+
+        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+        DoubleAxon(
+            input=[netIndex['self_energy'], netIndex['creature_similarity']],
+            output=netIndex['action_mate'],
+            operator=DoubleAxon.operators['and'],
+            threshold=0.9,
+            factor=1.0
+        ),
+        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+
+        Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
+        Axon(netIndex['memory_7'], netIndex['relay_7'], 0.5),
+        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
+        Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
+        Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
+        Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
+        Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
+        Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
+        Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
+        Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
+
         Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
         Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
         Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
@@ -45,7 +48,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             stamina=4, 
             fortitude=2, 
             intelligence=20, 
-            longevity=20, 
+            longevity=42, 
             fertility=9, 
             meateating=0, 
             planteating=7, 
@@ -60,11 +63,47 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     )
 
 def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+    deerbrain=axonsToHex([
+        DoubleAxon(
+            input=[netIndex['creature_similarity'], netIndex['self_energy']],
+            output=netIndex['action_mate'],
+            threshold=0.9,
+            operator=DoubleAxon.operators['and'],
+            factor=1.0
+        ),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.7),
+        Axon(netIndex['creature_speed'], netIndex['action_mate'], 0.2),
+        Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['self_sometimes'], netIndex['action_wander'], 1.0),
+    ])
+
+    # creature_deadliness -> memory_1: 0.999969482421875
+    # self_health -> action_turnright: 0.063720703125
+    # creature_similarity -> action_mate: 0.5
+    # creature_similarity -> action_mate: 0.578125
+    # see_grass -> action_eat: 0.999969482421875
+    # see_grass -> see_fruit: 0.999969482421875
+    # action_wander -> memory_0: -0.8116455078125
+    # creature_age and memory_6 -> creature_deadliness, threshold=0.6235294117647059 factor=0.789398193359375
+    # self_birth -> memory_7: 0.999969482421875
+    # self_birth -> memory_7: 0.953094482421875
+    # relay_7 -> creature_deadliness: 0.69207763671875
+    # relay_0 -> self_rarely: -0.50555419921875
+    # self_injury -> relay_2: 0.999969482421875
+    # memory_7 -> see_meat: 0.88629150390625
+    # self_sometimes -> action_flee: 0.999969482421875
+    # action_rest -> memory_5: 0.999969482421875
+    # action_rest -> memory_5: 0.999969482421875
+    # self_injury -> memory_5: -0.875030517578125
+    # self_injury -> memory_5: 0.999969482421875
+    # action_rest -> memory_5: 0.999969482421875
+    # self_sprints -> action_rest: -1.0
+    # memory_0 -> action_sprint: 0.995086669921875    
     return Creature(
         location=location,
         genome=[Genome(
             deadliness=0, 
-            speed=12, 
+            speed=6, 
             stamina=3, 
             fortitude=2, 
             intelligence=13, 
@@ -73,11 +112,11 @@ def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bo
             meateating=0, 
             planteating=7, 
             sightrange=4, 
-            sightfield=4, 
-            # brai'faecd86fcc85cb780605854211269566f857727c852876a4aba33057cad8b2b34ce3ffc48f193c143fce1315a975ce3a1514d7bed1ac9d96241fed48',
-            brain='574d4678677f91020625851e112695665857727c2997a7d22a225054038ef7f39bccb51a8f199c24fe4e96480be24284b445bc2154b344f7dc920cf4',
+            sightfield=3, 
+            brain=deerbrain,
             variant='superdeer'
         )], 
+
         speciesName='superdeer',
         energy=100,
         mutate=mutate
