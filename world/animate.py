@@ -5,6 +5,7 @@ from world.map import *
 from creatures.creature import Creature
 from creatures import templates
 import random
+import os
 
 class Animation():
     scenario: life.Scene
@@ -34,8 +35,7 @@ class Animation():
         mapWidth: int=self.world.mapWidth
 
         while not over:
-            viewWidth: int=curses.COLS-1
-            viewHeight: int=curses.LINES-5
+            viewWidth, viewHeight=os.get_terminal_size()
             
             self.scenario.step()
             steps=self.scenario.steps
@@ -49,17 +49,17 @@ class Animation():
             if inKey==ord('q'): over=True
             if inKey==ord('s'): life.saveWorld(self.scenario, f'{species[0][0]} {species[1][0]} {steps}')
                 #life.saveCreatures(self.world, self.creatures, steps, f'species/{species[0][0]} {steps}.txt')
-            if inKey==curses.KEY_UP: viewY = max(viewY-1, 0)
-            if inKey==curses.KEY_DOWN: viewY = min(viewY+1, mapHeight-viewHeight)
-            if inKey==curses.KEY_LEFT: viewX = max(viewX-1, 0)
-            if inKey==curses.KEY_RIGHT: viewX = min(viewX+1, mapWidth-viewWidth)
-            if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(map.nodes)))
-            if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(map.nodes)))
+            if inKey==ord('i'): viewY = max(viewY-1, 0)
+            if inKey==ord('k'): viewY = min(viewY+1, mapHeight-viewHeight-1)
+            if inKey==ord('j'): viewX = max(viewX-1, 0)
+            if inKey==ord('l'): viewX = min(viewX+1, mapWidth-viewWidth//2+2) # 120 - 192 = 27
+            if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(self.world.nodes), energy=10, mutate=True))
+            if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(self.world.nodes), energy=10, mutate=True))
             
-            for y in range(viewY, viewY + min(mapHeight-1, viewHeight)):
+            for y in range(viewY, viewY + min(mapHeight-1, viewHeight-5)):
                 row = [
                     self.world.nodes[x*mapHeight*2 + (y % 2)*mapHeight + y//2] 
-                    for x in range(viewX, viewX + viewWidth//5-3)
+                    for x in range(viewX, viewX + viewWidth//5-5)
                 ]
                 line = '' if y % 2 == 0 else '   '
                 for node in row:
@@ -73,10 +73,10 @@ class Animation():
                     else:
                         line += ' '
                     line += '     '
-                stdscr.addstr(y, 0, line)
+                stdscr.addstr(y-viewY, 0, line)
 
             # show top existing species
-            stdscr.addstr(viewHeight, 0, f'total:{len(self.creatures)}   ')
-            stdscr.addstr(viewHeight + 1, 0, f'viewport: {viewX} {viewY}')
+            stdscr.addstr(viewHeight - 5, 0, f'total:{len(self.creatures)}   ')
+            stdscr.addstr(viewHeight - 4, 0, f'viewport: {viewX} {viewY} x {viewWidth//5 + viewX} {viewHeight + viewY}')
             for y in range(min(3, len(species))):
-                stdscr.addstr(viewHeight+2+y, 0, f'{species[y][0]}: {species[y][1]}   ')
+                stdscr.addstr(viewHeight-3+y, 0, f'{species[y][0]}: {species[y][1]}   ')
