@@ -302,7 +302,7 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        brain=mergeBrains(*[g.brain for g in args], chunk=8),
+        brain=mergeBrains(*[g.brain for g in args]),
         variant=mergeString(*[g.variant for g in args], chunk=1)
     )
     return merged
