@@ -42,7 +42,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     ]
     return Creature(
         location=location,
-        genome=[Genome(
+        genomes=[Genome(
             deadliness=0, 
             speed=4, 
             stamina=4, 
@@ -101,7 +101,7 @@ def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bo
     # memory_0 -> action_sprint: 0.995086669921875    
     return Creature(
         location=location,
-        genome=[Genome(
+        genomes=[Genome(
             deadliness=0, 
             speed=6, 
             stamina=3, 
@@ -137,7 +137,7 @@ def scavenger(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     ]
     return Creature(
         location=location, 
-        genome=[Genome(
+        genomes=[Genome(
             deadliness=0, 
             speed=3, 
             stamina=3, 
@@ -184,7 +184,7 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     ]
     return Creature(
         location=location,  
-        genome=[Genome(
+        genomes=[Genome(
             deadliness=4, 
             speed=8, 
             stamina=8, 
@@ -207,7 +207,7 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
 def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, brain: str='') -> Creature:
     return Creature(
         location=location,
-        genome=[Genome(
+        genomes=[Genome(
             deadliness=1, 
             speed=1, 
             stamina=1, 
@@ -234,7 +234,7 @@ def rando(location: MapNode=MapNode(), energy: float=100) -> Creature:
 def cross(*creatures, location: MapNode=MapNode(), mutate: bool=False):
     return Creature(
         location=location, 
-        genome=[merge(*creature.genome) for creature in creatures], 
+        genomes=[merge(*creature.genome) for creature in creatures], 
         speciesName=mergeString(*[creature.speciesName for creature in creatures]),
         mutate=mutate
     )
