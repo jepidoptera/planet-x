@@ -67,6 +67,9 @@ class testGenome(unittest.TestCase):
         ]
         self.assertTrue(gene3.mutations == 9)
 
+        newBrain=mergeBrains ('1111111100000000bbbbbbbb', '555555557777777700000000bbbbbbbb')
+        self.assertTrue(newBrain.count('0') < 9)
+
     def testEncoding(self):
         g=randomGenome()
         variant=g.variant

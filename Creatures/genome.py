@@ -302,7 +302,7 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        brain=mergeString(*[g.brain for g in args], chunk=8),
+        brain=mergeBrains(*[g.brain for g in args], chunk=8),
         variant=mergeString(*[g.variant for g in args], chunk=1)
     )
     return merged
@@ -314,6 +314,46 @@ def mergeString(*args: str, chunk: int=1) -> str:
         genes=[arg[n*chunk:(n+1)*chunk] if len(arg) >= n*chunk else '' for arg in args]
         mergeStr += random.choice(genes)
     return mergeStr
+
+def mergeBrains(*args: str):
+    def similarity(s1: str, s2: str):
+        sim=0
+        for n in range(min(len(s1), len(s2))):
+            if s1[n] == s2[n]:
+                sim += 1
+        return sim/min(len(s1), len(s2))
+
+    class MergeableBrain:
+        def __init__(self, brain: str):
+            self.axons=[brain[n*8:(n+1)*8] for n in range(len(brain)//8)]
+            self._mergePos=0
+            self.finished=False
+        @property
+        def currentAxon(self):
+            return self.axons[self._mergePos]
+        def next(self):
+            self._mergePos += 1
+            if self._mergePos == len(self.axons): self.finished=True
+
+    parsedOut=0
+    brains=[MergeableBrain(brain) for brain in args]
+    newBrain: str=''
+    while parsedOut < len(brains):
+        remainingBrains=list(filter(lambda brain: not brain.finished, brains))
+        if len(remainingBrains) == 0: break
+        newAxon=random.choice(
+            [brain.currentAxon
+            for brain in remainingBrains]
+        )
+        newBrain += newAxon
+        for brain in brains:
+            brain.next()
+            if brain.finished: 
+                continue
+            if similarity(brain.currentAxon, newAxon) > 0.8:
+                brain.next()
+
+    return newBrain
 
 def modString(string: str, char: chr, position: int) -> str:
     return string[:position] + char + string[position+1:]
