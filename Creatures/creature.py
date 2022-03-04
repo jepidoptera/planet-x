@@ -3,8 +3,9 @@
 # 288 lines long now. got about ten other files as well
 from cgi import MiniFieldStorage
 from enum import Enum
+import math
 import random
-from creatures.genome import Genome, mergeString
+from creatures.genome import Genome, mergeString, modString
 from world.map import *
 import typing
 
@@ -207,7 +208,7 @@ class Creature():
         self.rests=0
         self._metabolism=(
             sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) for g in genome])
-            + len(self.brain)/8) / (3500 * len(genome))
+            + len(self.brain)/8) / (7000 * len(genome))
 
         self.direction=int(random.random() * len(self.location.neighbors))
         self.thinkTimer=int(random.random() * self.intelligence)
@@ -226,7 +227,12 @@ class Creature():
 
     @property
     def longevity(self) -> float:
-        return self._longevity * 100 # lifespan in frames
+        return self._longevity*100 # lifespan in frames
+
+    @longevity.setter
+    def longevity(self, value) -> float:
+        self._longevity=value*100
+        return self._longevity
 
     @property 
     def metabolism(self) -> float:
@@ -267,7 +273,7 @@ class Creature():
 
     @property
     def speed(self):
-        return self._speed * (2 if self.sprints else 1)
+        return self._speed * (2 if self.sprints else 1) * (1-self.age/self.longevity)
 
     def fromHex(self, hexcode) -> Axon:
 
@@ -399,10 +405,11 @@ class Creature():
             return 'action_attack'
 
         elif self.mate and self.mate.location in self.location.neighbors:
-            if self.energy > self.size:
+            if self.energy > self.size and self.fertility > 0:
                 self.energy -= self.size
                 self.energy /= 2
                 self.fertility -= 1
+                newName=mergeString(self.speciesName, self.mate.speciesName)
                 self.offspring=Creature(
                     self.location, 
                     [
@@ -410,7 +417,9 @@ class Creature():
                         Genome.merge(*self.mate.genome).mutate()
                     ], 
                     energy=self.energy,
-                    speciesName=mergeString(self.speciesName, self.mate.speciesName)
+                    speciesName=newName
+                    if int(random.random()*10)>0 else
+                    modString(newName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random() * len(newName)))
                 )
                 self.offspringCount += 1
             return 'action_mate'
@@ -618,7 +627,7 @@ class Creature():
         print(f'location x:{self.location.x}, y:{self.location.y}')
 
     def toJson(self) -> dict:
-        return {
+        obj = {
             'genomes': [self.genome[n].encode() for n in range(len(self.genome))],
             'age': self.age,
             'brain': self.brain,
@@ -627,9 +636,11 @@ class Creature():
             'speciesName': self.speciesName,
             'offspring': self.offspringCount
         }
+        if self.longevity > 256: obj['immortal']=True
+        return obj
 
 def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
-    return Creature(
+    newCreature= Creature(
         location=location,
         genome=[
             Genome.decode(g)
@@ -641,6 +652,8 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
         energy=float(j['energy']) if 'energy' in j else 100,
         age=int(j['age']) if 'age' in j else 0
     )
+    if 'immortal' in j: newCreature.longevity=math.inf
+    return newCreature
 
 Creature.fromJson=staticmethod(fromJson)
 
@@ -654,8 +667,8 @@ Creature.creatureNeurons=list[Neuron]([
 ])
 
 Creature.selfNeurons=list[Neuron]([
-    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy * 0.01),
-    Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health),
+    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy/self.size),
+    Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health/self.fortitude),
     Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age/self.longevity),
     Neuron(NeuronType.self, name='self_sprints', sense=lambda self: 1 if self.sprints else 0),
     Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
