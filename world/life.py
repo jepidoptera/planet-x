@@ -1,3 +1,4 @@
+import math
 from creatures import templates
 from world.map import *
 from creatures.creature import *
@@ -25,7 +26,7 @@ class Scene():
         self.creatures=creatures
         self.steps=steps
         self.name=name
-        if stepFunction: self.stepFunction=stepFunction
+        self.stepFunction=stepFunction
 
         for creature in creatures:
             creature.moveTimer = random.random() * 60
@@ -40,17 +41,22 @@ class Scene():
         self.step = step
 
     def basicWorld():
-        return Map(80,40).populateGrass(value=20, density=0.2)
+        return Map(120,80).populateGrass(value=20, density=0.2)
 
-class Scenarios():
-
-    def _growGrass(world: Map, number: int=1, value: float=10):
+    def growGrass(world: Map, number: int=4, value: float=20):
         for _ in range(number):
             random.choice(world.nodes).resource = Resource(ResourceType.grass, value)
  
-    def _strewMeat(world: Map, number: int=1, value: float=10):
+    def strewMeat(world: Map, number: int=1, value: float=10):
         for _ in range(number):
             random.choice(world.nodes).resource = Resource(ResourceType.meat, value)
+
+    def randomAges(creatures: set[Creature]):
+        for creature in creatures:
+            creature.age = random.random() * creature.longevity
+        return creatures
+
+class Scenarios():
 
     def random_creatures(world: Map=None) -> Scene:
         world=world or Scene.basicWorld()
@@ -60,21 +66,39 @@ class Scenarios():
                 templates.rando() 
                 for n in range(300)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            stepFunction=lambda: Scene.growGrass(world, 2, 20),
             name='random creatures'
         )
 
     def herbivores(world: Map=None) -> Scene:
         world=world or Scene.basicWorld()
-        return Scene(
+
+        creatures=set([
+            templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
+            for n in range(500)
+        ])
+        for creature in creatures:
+            creature.age=random.random() * creature.longevity
+            creature.energy=10
+
+        optimalDeer=250
+        def maintainPopulations(scene: Scene):
+            if scene.steps % 50 == 0:
+                deers=list(scene.creatures)
+                deers.sort(key=lambda deer: deer.offspringCount * 5000 + deer.age + deer.energy, reverse=True)
+                for n in range(optimalDeer - len(deers)):
+                    scene.creatures.add(templates.cross(deers[0], deers[1], location=random.choice(world.nodes), mutate=True))
+                # for n in range(optimalWolves - len(wolves)):
+                #     scene.creatures.add(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes), mutate=True))
+            Scene.growGrass(world, 4, 20)
+
+        scene=Scene(
             world=world, 
-            creatures=set([
-                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
-                for n in range(300)
-            ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            creatures=creatures,
             name='herbivores'
         )
+        scene.stepFunction=lambda: maintainPopulations(scene)
+        return scene
 
     def scavengers(world: Map=None) -> Scene:
         world=world or Scene.basicWorld()
@@ -84,7 +108,7 @@ class Scenarios():
                 templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
                 for n in range(300)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            stepFunction=lambda: Scene.growGrass(world, 2, 20),
             name='scavengers'
         )
     def predator_prey(world: Map=None) -> Scene: 
@@ -92,14 +116,14 @@ class Scenarios():
         return Scene(
             world=world, 
             creatures=set([
-                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
+                templates.herbivore(mutate=True) 
                 for n in range(300)
             ] +
             [
-                templates.cross(*[templates.rando(), *[templates.carnivore()]*3]) 
+                templates.carnivore(mutate=True)
                 for n in range(30)
             ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            stepFunction=lambda: Scene.growGrass(world, 2, 20),
             name='predators and prey'
         )
 
@@ -107,19 +131,51 @@ class Scenarios():
         world=world or Scene.basicWorld()
         return Scene(
             world=world, 
-            creatures=set([
-                templates.herbivore(energy=10) 
-                for n in range(300)
-            ] +
-            [
-                templates.herbivore_evolved(energy=10)
-                for n in range(10)
-            ]),
-            stepFunction=lambda: Scenarios._growGrass(world, 2, 20),
+            creatures=Scene.randomAges(set([
+                templates.herbivore_evolved(energy=10, mutate=True)
+                for n in range(400)
+            ])),
+            stepFunction=lambda: Scene.growGrass(world, 4, 20),
             name='superdeer'
         )
 
-    def wolfDen(world: Map=None, creatures: set[Creature]=None) -> Scene:
+    def immortal_wolves(world: Map=None, creatures: set[Creature]=set()) -> Scene: 
+        world=world or Map(120,60).populateGrass(20, 0.2)
+        if len(creatures) == 0:
+            wolves=[templates.carnivore(
+                location=random.choice(world.nodes)
+            ) for n in range(10)]
+
+            for wolf in wolves:
+                wolf.longevity=Longevity.max
+                wolf.fertility=0
+
+            deers=[templates.herbivore_evolved(
+                location=random.choice(world.nodes),
+                mutate=True
+            ) for n in range(500)]
+
+            for deer in deers:
+                deer.age = random.random() * deer.longevity
+
+            creatures=set(deers + wolves)
+        else:
+            wolves=set(filter(lambda c: c.speciesName == 'tigerwolf', creatures))
+
+        def maintainStasis():
+            for wolf in wolves:
+                wolf.energy=10
+            Scene.growGrass(world, 4, 20)
+
+        return Scene(
+            world=world, 
+            creatures=creatures,
+            stepFunction=maintainStasis,
+            name='immortal wolves',
+            steps=steps
+        )
+
+    def wolfDen(world: Map=None, creatures: set[Creature]=None, steps: int=0) -> Scene:
         world=world or Map(120, 60).populateGrass(20, 0.2)
         optimalWolves: int=40
         optimalDeer: int=400
@@ -145,12 +201,13 @@ class Scenarios():
                     scene.creatures.add(templates.cross(deers[0], deers[1], location=random.choice(world.nodes), mutate=True))
                 # for n in range(optimalWolves - len(wolves)):
                 #     scene.creatures.add(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes), mutate=True))
-            Scenarios._growGrass(world, 2, 20)
+            Scene.growGrass(world, 2, 20)
 
         scene=Scene(
             world=world,
             creatures=creatures,
-            name='wolfden'
+            name='wolfden',
+            steps=steps
         )
         scene.stepFunction=lambda: maintainPopulations(scene)
         return scene
@@ -180,7 +237,7 @@ def cycle(world: Map, creatures: set[Creature]):
         if creature.age > creature.longevity or creature.energy < 0:
             creature.die()            
 
-        if creature._dead: creatures.remove(creature)
+        if creature.dead: creatures.remove(creature)
         if creature.offspring: 
             creatures.add(creature.offspring)
             creature.offspring=None
@@ -193,7 +250,7 @@ def countSpecies(creatures):
             species[creature.speciesName]=0
         species[creature.speciesName] += 1
 
-    topSpecies = [(name, number) for i, (name, number) in enumerate(species.items())]
+    topSpecies=[(name, number) for i, (name, number) in enumerate(species.items())]
     topSpecies.sort(key=lambda x: -x[1])
     return topSpecies
     
@@ -213,6 +270,7 @@ def saveWorld(scene: Scene, filename: str):
     with open(dirname + filename + '.world', 'w') as file:
         json.dump({
             'scenario': scene.name,
+            'step': scene.steps,
             'mapnodes': [{
                 'index': node.index,
                 'neighbornodes': [n.index for n in node.neighbors],
@@ -236,6 +294,7 @@ def loadWorld(filename: str) -> Scene:
     with open(dirname + filename) as file:
         data=json.load(file)
         scenarioName=data['scenario']
+        steps=data['step'] if 'step' in data else 0
         mapnodes=data['mapnodes']
         world=Map(0,0)
         creatures: set[Creature]=set()
@@ -243,27 +302,36 @@ def loadWorld(filename: str) -> Scene:
         for node in mapnodes:
             newnode=MapNode(int(node['index']), neighbors=node['neighbornodes'], x=node['x'], y=node['y'], z=node['z'])
             newnode.occupant=node['occupant']
+            if node['grass']:
+                newnode.resource=Resource(ResourceType.grass, node['grass'])
+            if node['meat']:
+                newnode.resource=Resource(ResourceType.meat, node['meat'])
             world.nodes.append(newnode)
         
         for node in world.nodes:
             node.neighbors=[world.nodes[n] for n in node.neighbors]           
             if node.occupant:
                 # will automatically set this node.occupant=Creature
-                creatures.add(Creature.fromJson(node.occupant, world.nodes[node.occupant['location']]))
+                newCreature=Creature.fromJson(node.occupant, world.nodes[node.occupant['location']])
+                creatures.add(newCreature)
         
         for node in world.nodes:
             node.calcVisionTree(10) 
 
-        world.mapWidth=int(max([node.x for node in world.nodes]))
-        world.mapHeight=int(max([node.y for node in world.nodes]))
+        world.mapWidth=int(max([node.x for node in world.nodes])) + 1
+        world.mapHeight=int(max([node.y for node in world.nodes])) + 1
 
         if scenarioName == 'wolfden':
-            return Scenarios.wolfDen(world=world)
+            return Scenarios.wolfDen(world=world, creatures=creatures, steps=steps)
+        elif scenarioName == 'immortal wolves':
+            return Scenarios.immortal_wolves(world=world, creatures=creatures, steps=steps)
         else:
             return Scene(
                 name=scenarioName,
                 world=world,
-                creatures=creatures
+                creatures=creatures,
+                stepFunction=lambda: Scene.growGrass(world, 4, 25),
+                steps=steps
             )
 
 def loadCreatures(filename: str) -> Scene:
