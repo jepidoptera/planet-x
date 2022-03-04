@@ -127,7 +127,7 @@ class Scenarios():
             name='predators and prey'
         )
 
-    def superdeer(world: Map=None) -> Scene: 
+    def superdeer(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
         world=world or Scene.basicWorld()
         return Scene(
             world=world, 
@@ -136,10 +136,11 @@ class Scenarios():
                 for n in range(400)
             ])),
             stepFunction=lambda: Scene.growGrass(world, 4, 20),
-            name='superdeer'
+            name='superdeer',
+            steps=steps
         )
 
-    def immortal_wolves(world: Map=None, creatures: set[Creature]=set()) -> Scene: 
+    def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
         world=world or Map(120,60).populateGrass(20, 0.2)
         if len(creatures) == 0:
             wolves=[templates.carnivore(
@@ -210,6 +211,29 @@ class Scenarios():
             steps=steps
         )
         scene.stepFunction=lambda: maintainPopulations(scene)
+        return scene
+
+    def sacrificial_deer(world: Map=None, creatures: set[Creature]=None, steps: int=0) -> Scene:
+        world=world or Scene.basicWorld()
+
+        if not creatures:
+            creatures=set([
+                    templates.carnivore(mutate=True)
+                    for n in range(200)
+                ])
+
+        def releaseFood(scene: Scene):
+            if scene.steps % 10 == 0:
+                scene.creatures.add(templates.herbivore(location=random.choice(world.nodes), energy=100))
+            # Scene.growGrass(world, 2, 20)
+
+        scene=Scene(
+            world=world,
+            creatures=creatures,
+            name='sacrificial deer',
+            steps=steps
+        )
+        scene.stepFunction=lambda: releaseFood(scene)
         return scene
 
 

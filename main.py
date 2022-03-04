@@ -24,6 +24,8 @@ for arg, value in args:
             scenario=life.Scenarios.wolfDen()
         elif value == 'immortal wolves':
             scenario=life.Scenarios.immortal_wolves()
+        elif value == 'sacrificial deer':
+            scenario=life.Scenarios.sacrificial_deer()
         elif value == 'random':
             scenario = life.Scenarios.random_creatures()
 
