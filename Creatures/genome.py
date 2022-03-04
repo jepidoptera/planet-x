@@ -1,12 +1,11 @@
-from json.encoder import INFINITY
-from operator import mod
+from math import inf as infinity
 from random import random
 import random
 
 # genome
 class Stat():
     min = 0
-    max = INFINITY
+    max = infinity
     metacost:float=0.0
     growcost:float=0.0
     def __init__(self, value, min:int = 0, max:int = 0, metacost:float = 0.0, growcost:float = 0.0):
@@ -42,7 +41,7 @@ class Speed(Stat):
 
 class Longevity(Stat):
     min = 1
-    max = INFINITY # imortality would require infinite energy tho
+    max = infinity # imortality would require infinite energy tho
     metacost = 0.8
     growcost = 1.0
 
@@ -85,7 +84,7 @@ class Stamina(Stat):
     growcost = 1.0
 
 class Genome():
-    mutationRate=2
+    mutationRate=1
     mutations=0
     def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, variant: str='', mutations: int=0):
 
@@ -191,9 +190,6 @@ class Genome():
         return self._longevity
 
     def mutate(self, number: int=0, mutationType: str=''):
-        def modString(string: str, char: chr, position: int) -> str:
-            return string[:position] + char + string[position+1:]
-
         if number == 0: number=int(random.random() * random.random() * self.mutationRate * 4)
         mutationType=mutationType.lower()
         for _ in range(number):
@@ -318,6 +314,9 @@ def mergeString(*args: str, chunk: int=1) -> str:
         genes=[arg[n*chunk:(n+1)*chunk] if len(arg) >= n*chunk else '' for arg in args]
         mergeStr += random.choice(genes)
     return mergeStr
+
+def modString(string: str, char: chr, position: int) -> str:
+    return string[:position] + char + string[position+1:]
 
 def decode(genes: str) -> Genome:
     g=emptyGenome()
