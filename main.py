@@ -2,7 +2,7 @@ from fileinput import filename
 import sys, getopt
 from world import life
 still = True
-filename= '' # 'deersheep tigerwolf 225'
+filename= '' # 'sugkrdeey superdeer 132807' # 'demtvazej danrsveej 71907' # 'deersheep tigerwolf 225'
 # dirname='species/'
 scenario: life.Scene = None
 
@@ -18,19 +18,23 @@ for arg, value in args:
             scenario=life.Scenarios.superdeer()
         elif value == 'herbivores':
             scenario=life.Scenarios.herbivores()
+        elif value == 'predator/prey':
+            scenario=life.Scenarios.predator_prey()
         elif value == 'wolfden':
             scenario=life.Scenarios.wolfDen()
+        elif value == 'immortal wolves':
+            scenario=life.Scenarios.immortal_wolves()
         elif value == 'random':
             scenario = life.Scenarios.random_creatures()
 
 if filename:
     scenario=life.loadWorld(filename)
 
-if not scenario: scenario = life.Scenarios.wolfDen()
+if not scenario: scenario = life.Scenarios.predator_prey()
 
 if still:
     from world.stilllife import TextWorld
     TextWorld(scenario).run()
 else:
-    from world.animatelife import Animation
+    from world.animate import Animation
     Animation(scenario).run()
