@@ -8,6 +8,8 @@ import json
 from typing import Callable
 
 dirname: str='species/'
+defaultMapWidth=120
+defaultMapHeight=80
 
 class Scene():
     world: Map
@@ -41,7 +43,7 @@ class Scene():
         self.step = step
 
     def basicWorld():
-        return Map(120,80).populateGrass(value=20, density=0.2)
+        return Map(defaultMapWidth,defaultMapHeight).populateGrass(value=20, density=0.2)
 
     def growGrass(world: Map, number: int=4, value: float=20):
         for _ in range(number):
@@ -116,28 +118,15 @@ class Scenarios():
         return Scene(
             world=world, 
             creatures=set([
-                templates.herbivore(mutate=True) 
-                for n in range(300)
+                templates.danrsveej(mutate=True) 
+                for n in range(500)
             ] +
             [
-                templates.carnivore(mutate=True)
+                templates.quiltrpolf(mutate=True)
                 for n in range(30)
             ]),
             stepFunction=lambda: Scene.growGrass(world, 2, 20),
             name='predators and prey'
-        )
-
-    def superdeer(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
-        world=world or Scene.basicWorld()
-        return Scene(
-            world=world, 
-            creatures=Scene.randomAges(set([
-                templates.herbivore_evolved(energy=10, mutate=True)
-                for n in range(400)
-            ])),
-            stepFunction=lambda: Scene.growGrass(world, 4, 20),
-            name='superdeer',
-            steps=steps
         )
 
     def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
