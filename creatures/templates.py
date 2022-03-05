@@ -72,8 +72,16 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             factor=1.0
         ),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.7),
-        Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['see_grass'], netIndex['action_eat'], 0.7),
         Axon(netIndex['self_sometimes'], netIndex['action_wander'], 1.0),
+        Axon(netIndex['creature_deadliness'], netIndex['memory_0'], 1.0),
+        Axon(netIndex['creature_deadliness'], netIndex['memory_1'], 1.0),
+        Axon(netIndex['memory_0'], netIndex['action_sprint'], 0.9),
+        Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
+        Axon(netIndex['memory_1'], netIndex['action_continue'], 0.9),
+        Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
+        Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
+        Axon(netIndex['self_rarely'], netIndex['memory_1'], -1.0),
     ])
 
     return Creature(
@@ -81,7 +89,7 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         genomes=[Genome(
             deadliness=0, 
             speed=6, 
-            stamina=3, 
+            stamina=6, 
             fortitude=2, 
             intelligence=13, 
             longevity=42, 
@@ -221,7 +229,7 @@ def deerkiller(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
     # this thing just kills deer
     brain=[
         Axon(netIndex['creature_health'], netIndex['action_attack'], 1.0),
-        Axon(netIndex['self_always'], netIndex['action_wander'], 0.1),
+        Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
     ]
     killer=Creature(
         location=location,  
