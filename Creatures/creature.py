@@ -482,7 +482,11 @@ class Creature():
 
     def wander(self, _=None):
         # won't allow 'wandering' into someone else's tile
-        self.path=[random.choice(list(filter(lambda n: not n.occupant, self.location.neighbors)))]
+        options=list(filter(lambda n: not n.occupant, self.location.neighbors))
+        if len(options) == 0:
+            self.path=[]
+        else:
+            self.path=[random.choice(options)]
 
     def turnLeft(self, _=None):
         # works
