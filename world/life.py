@@ -133,13 +133,9 @@ class Scenarios():
         world=world or Map(120,60).populateGrass(20, 0.2)
         numOfWolves=10
         if len(creatures) == 0:
-            wolves=[templates.quiltrpolf(
+            wolves=[templates.deerkiller(
                 location=random.choice(world.nodes)
             ) for n in range(numOfWolves)]
-
-            for wolf in wolves:
-                wolf.longevity=Longevity.max
-                wolf.fertility=0
 
             deers=[templates.danrsveej(
                 location=random.choice(world.nodes),

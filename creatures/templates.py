@@ -76,28 +76,6 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         Axon(netIndex['self_sometimes'], netIndex['action_wander'], 1.0),
     ])
 
-    # creature_deadliness -> memory_1: 0.999969482421875
-    # self_health -> action_turnright: 0.063720703125
-    # creature_similarity -> action_mate: 0.5
-    # creature_similarity -> action_mate: 0.578125
-    # see_grass -> action_eat: 0.999969482421875
-    # see_grass -> see_fruit: 0.999969482421875
-    # action_wander -> memory_0: -0.8116455078125
-    # creature_age and memory_6 -> creature_deadliness, threshold=0.6235294117647059 factor=0.789398193359375
-    # self_birth -> memory_7: 0.999969482421875
-    # self_birth -> memory_7: 0.953094482421875
-    # relay_7 -> creature_deadliness: 0.69207763671875
-    # relay_0 -> self_rarely: -0.50555419921875
-    # self_injury -> relay_2: 0.999969482421875
-    # memory_7 -> see_meat: 0.88629150390625
-    # self_sometimes -> action_flee: 0.999969482421875
-    # action_rest -> memory_5: 0.999969482421875
-    # action_rest -> memory_5: 0.999969482421875
-    # self_injury -> memory_5: -0.875030517578125
-    # self_injury -> memory_5: 0.999969482421875
-    # action_rest -> memory_5: 0.999969482421875
-    # self_sprints -> action_rest: -1.0
-    # memory_0 -> action_sprint: 0.995086669921875    
     return Creature(
         location=location,
         genomes=[Genome(
@@ -239,6 +217,35 @@ def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
         mutate=mutate
     )
 
+def deerkiller(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+    # this thing just kills deer
+    brain=[
+        Axon(netIndex['creature_health'], netIndex['action_attack'], 1.0),
+        Axon(netIndex['self_always'], netIndex['action_wander'], 0.1),
+    ]
+    killer=Creature(
+        location=location,  
+        genomes=[Genome(
+            deadliness=4, 
+            speed=12, 
+            stamina=8, 
+            fortitude=3, 
+            intelligence=13, 
+            longevity=math.inf, 
+            fertility=0, 
+            meateating=7, 
+            planteating=0, 
+            sightrange=7, 
+            sightfield=2, 
+            brain=axonsToHex(brain),
+            variant='deerkiller'
+        )], 
+        speciesName='killerofdeer',
+        energy=energy,
+        mutate=mutate
+    )
+    killer._metabolism=0
+    return killer
 
 def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, brain: str='') -> Creature:
     return Creature(
