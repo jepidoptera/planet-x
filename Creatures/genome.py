@@ -32,7 +32,7 @@ class Fortitude(Stat):
 class Deadliness(Stat):
     max = 7
     metacost = 4.0
-    growcost = 1.0
+    growcost = 4.0
 
 class Speed(Stat):
     max = 12
@@ -54,7 +54,7 @@ class Intelligence(Stat):
 class MeatEating(Stat):
     max = 7
     metacost = 1.0
-    growcost = 0.0
+    growcost = 4.0
 
 class PlantEating(Stat):
     max = 7
