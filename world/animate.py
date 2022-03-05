@@ -63,9 +63,12 @@ class Animation():
             if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(self.world.nodes), energy=10, mutate=True))
             if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(self.world.nodes), energy=10, mutate=True))
             
-            for y in range(viewY, viewY + min(mapHeight-1, viewHeight-5)):
+            for y in range(0, min(mapHeight-1, viewHeight-5)):
+                stdscr.addstr(y, 0, ' '*viewWidth, curses.COLOR_BLACK)
+
+            for y in range(0, min(mapHeight-1, viewHeight-5)):
                 row = [
-                    self.world.nodes[x*mapHeight*2 + (y % 2)*mapHeight + y//2] 
+                    self.world.nodes[x*mapHeight*2 + ((y + viewY) % 2)*mapHeight + (y + viewY)//2] 
                     for x in range(viewX, viewX + viewWidth//6-3)
                 ]
                 # line = '' if y % 2 == 0 else '   '
@@ -85,17 +88,17 @@ class Animation():
                 for i, node in enumerate(row):
                     x=i*6 + (y%2)*3
                     if node.occupant:
-                        stdscr.addstr(y-viewY, x, 
+                        stdscr.addstr(y, x, 
                             node.occupant.speciesName[0].upper() 
                             if node.occupant.meateating > node.occupant.planteating 
                             else node.occupant.speciesName[0],
                             curses.COLOR_WHITE)
                     elif node.resource == ResourceType.grass:
-                        stdscr.addstr(y-viewY, x, '"', curses.COLOR_GREEN)
+                        stdscr.addstr(y, x, '"', curses.COLOR_GREEN)
                     elif node.resource == ResourceType.meat:
-                        stdscr.addstr(y-viewY, x, '+', curses.COLOR_RED)
+                        stdscr.addstr(y, x, '+', curses.COLOR_RED)
                     else:
-                        stdscr.addstr(y-viewY, x, ' ', curses.COLOR_BLACK)
+                        stdscr.addstr(y, x, ' ', curses.COLOR_BLACK)
 
             # show top existing species
             stdscr.addstr(viewHeight - 5, 0, f'total:{len(self.creatures)}   ')
