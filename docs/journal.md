@@ -17,3 +17,6 @@
     * no conservation or convergence of species name. they're all just a bunch of random letters at this point. would like to fix that.
 
     i haven't yet analyzed the brain composition to see which behaviors were selected for and how. todo.
+
+3/4/2022
+    Implemented some new features, including double axons. The most interesting stuff I've been doing is with the scenarios. Each scenario consists of a world, a collection of starting creatures, and an optional stepfunction that runs once per step. I've been running one that starts with a bunch of predators, then throws a deer at them every ten steps so they can evolve to catch it. Pretty successful! I call this newly evolved creation the qiltrpolf. Next: throw qiltrpolf and danrsveej in together and see how they get along ;)
