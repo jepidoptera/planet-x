@@ -132,7 +132,7 @@ class Scenarios():
     def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
         world=world or Map(120,60).populateGrass(20, 0.2)
         if len(creatures) == 0:
-            wolves=[templates.carnivore(
+            wolves=[templates.quiltrpolf(
                 location=random.choice(world.nodes)
             ) for n in range(10)]
 
@@ -140,7 +140,7 @@ class Scenarios():
                 wolf.longevity=Longevity.max
                 wolf.fertility=0
 
-            deers=[templates.herbivore_evolved(
+            deers=[templates.danrsveej(
                 location=random.choice(world.nodes),
                 mutate=True
             ) for n in range(500)]
