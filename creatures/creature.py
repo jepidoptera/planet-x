@@ -204,6 +204,7 @@ class Creature():
         self.speciesName=speciesName or mergeString(*[g.variant for g in self.genome])
 
         self.age=age
+        self.justBorn=True
         self.offspringCount=offspringCount
         self._health=self.fortitude
         self.energy=energy
@@ -369,6 +370,8 @@ class Creature():
         if self.speciesName == 'tigerwolf':
             er=1
 
+        self.justBorn=False
+
         if self._dead: return 'dead'
 
         # heal
@@ -429,6 +432,7 @@ class Creature():
                     modString(newName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random() * len(newName)))
                 )
                 self.offspringCount += 1
+                self.mate=None
             return 'action_mate'
             
         # move along the path
@@ -507,6 +511,9 @@ class Creature():
         self._dead=True
 
     def think(self) -> str:
+        if self.speciesName == 'killerofdeer':
+            er=1
+
         self.clearInputs()
         options=[self.processStimulus(target=self)]
 
@@ -565,7 +572,7 @@ class Creature():
                 if (node.resource):
                     if node.resource.type == ResourceType.grass and netIndex['see_grass'].activation: continue
                     if node.resource.type == ResourceType.meat and netIndex['see_meat'].activation: continue
-                    actionOptions.append(self.processStimulus(stimulusType='food', target=node, magnitude=min(node.resource.value, 10.0/(distance+1))))
+                    actionOptions.append(self.processStimulus(stimulusType='food', target=node))
 
         return actionOptions
 
@@ -669,9 +676,9 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
 Creature.fromJson=staticmethod(fromJson)
 
 Creature.creatureNeurons=list[Neuron]([
-    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: other.deadliness - self.deadliness),
+    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: other.deadliness/self.fortitude),
     Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age/other.longevity),
-    Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health),
+    Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health/other.fortitude),
     Neuron(NeuronType.creature, name='creature_similarity', sense=lambda self, other: self.getSimilarity(other)),
     Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: other.speed - self.speed),
     Neuron(NeuronType.creature, name='creature_size', sense=lambda self, other: other.size)
@@ -708,8 +715,8 @@ Creature.actionNeurons=list[Neuron]([
     Neuron(NeuronType.action, name='action_move', action=Creature.moveForward),
     Neuron(NeuronType.action, name='action_sprint', action=Creature.sprint),
     Neuron(NeuronType.action, name='action_rest', action=Creature.rest, bias=0.1),
-    Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.1),
-    Neuron(NeuronType.action, name='action_continue', action=lambda x, y: x, bias=0.2)
+    Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.05),
+    Neuron(NeuronType.action, name='action_continue', action=lambda x, y: x, bias=0.1)
 ])
 
 # these are class level placeholders
