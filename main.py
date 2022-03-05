@@ -1,6 +1,14 @@
 from fileinput import filename
 import sys, getopt
 from world import life
+# from dotenv import load_dotenv
+# import os
+
+# load_dotenv()
+
+# life.defaulMapWidth=os.getenv('MAP_WIDTH') or life.defaultMapWidth
+# life.defaulMapHeight=os.getenv('MAP_HEIGHT') or life.defaultMapHeight
+
 still = True
 filename= '' # 'sugkrdeey superdeer 132807' # 'demtvazej danrsveej 71907' # 'deersheep tigerwolf 225'
 # dirname='species/'
