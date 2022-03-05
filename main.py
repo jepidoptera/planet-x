@@ -40,7 +40,7 @@ for arg, value in args:
 if filename:
     scenario=life.loadWorld(filename)
 
-if not scenario: scenario = life.Scenarios.predator_prey()
+if not scenario: scenario = life.Scenarios.immortal_wolves()
 
 if still:
     from world.stilllife import TextWorld
