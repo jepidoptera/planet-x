@@ -85,13 +85,13 @@ class Animation():
                 # stdscr.addstr(y-viewY, 0, line)
 
                 for i, node in enumerate(row):
-                    x=i*6 + (y%2)*3
+                    x=i*6 + ((y+viewY)%2)*3
                     if node.occupant:
                         stdscr.addstr(y, x, 
                             node.occupant.speciesName[0].upper() 
                             if node.occupant.meateating > node.occupant.planteating 
                             else node.occupant.speciesName[0],
-                            curses.color_pair(7))
+                            curses.color_pair(1) if node.occupant.justBorn else curses.color_pair(7))
                     elif node.resource and node.resource.type == ResourceType.grass:
                         stdscr.addstr(y, x, '"', curses.color_pair(2))
                     elif node.resource and node.resource.type == ResourceType.meat:
