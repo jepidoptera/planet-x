@@ -131,10 +131,11 @@ class Scenarios():
 
     def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
         world=world or Map(120,60).populateGrass(20, 0.2)
+        numOfWolves=10
         if len(creatures) == 0:
             wolves=[templates.quiltrpolf(
                 location=random.choice(world.nodes)
-            ) for n in range(10)]
+            ) for n in range(numOfWolves)]
 
             for wolf in wolves:
                 wolf.longevity=Longevity.max
@@ -150,7 +151,9 @@ class Scenarios():
 
             creatures=set(deers + wolves)
         else:
-            wolves=set(filter(lambda c: c.speciesName == 'tigerwolf', creatures))
+            wolves=set(filter(lambda c: c.meateating == 7, creatures))
+            if len(wolves) > numOfWolves:
+                wolves=set(list(wolves)[:numOfWolves])
 
         def maintainStasis():
             for wolf in wolves:
