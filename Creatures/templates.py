@@ -62,7 +62,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         mutate=mutate
     )
 
-def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     deerbrain=axonsToHex([
         DoubleAxon(
             input=[netIndex['creature_similarity'], netIndex['self_energy']],
@@ -72,7 +72,6 @@ def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bo
             factor=1.0
         ),
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.7),
-        Axon(netIndex['creature_speed'], netIndex['action_mate'], 0.2),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
         Axon(netIndex['self_sometimes'], netIndex['action_wander'], 1.0),
     ])
@@ -114,10 +113,10 @@ def herbivore_evolved(location: MapNode=MapNode(), energy: float=100, mutate: bo
             sightrange=4, 
             sightfield=3, 
             brain=deerbrain,
-            variant='superdeer'
+            variant='danrsveej'
         )], 
 
-        speciesName='superdeer',
+        speciesName='danrsveej',
         energy=100,
         mutate=mutate
     )
@@ -203,6 +202,43 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         energy=energy,
         mutate=mutate
     )
+def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+    # designed with the help of evolution
+    brain=[
+        Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.88),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
+        Axon(netIndex['creature_similarity'], netIndex['action_turnleft'], 1.0),
+        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.1),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
+        Axon(netIndex['creature_similarity'], netIndex['action_continue'], 0.69),
+        Axon(netIndex['action_attack'], netIndex['memory_0'], 0.69),
+        Axon(netIndex['memory_0'], netIndex['action_sprint'], 0.69),
+        Axon(netIndex['action_eat'], netIndex['memory_0'], -1.0),
+    ]
+    return Creature(
+        location=location,  
+        genomes=[Genome(
+            deadliness=4, 
+            speed=8, 
+            stamina=8, 
+            fortitude=3, 
+            intelligence=30, 
+            longevity=40, 
+            fertility=6, 
+            meateating=7, 
+            planteating=0, 
+            sightrange=7, 
+            sightfield=2, 
+            brain=axonsToHex(brain),
+            variant='qiltrpolf'
+        )], 
+        speciesName='qiltrpolf',
+        energy=energy,
+        mutate=mutate
+    )
+
 
 def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, brain: str='') -> Creature:
     return Creature(
