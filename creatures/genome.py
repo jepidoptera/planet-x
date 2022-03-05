@@ -175,7 +175,7 @@ class Genome():
 
     @property
     def stamina(self) -> float:
-        return self._stamina ** 2 / (self._stamina + self._speed / 3 + 1)
+        return self._stamina
 
     @property
     def fortitude(self) -> float:
