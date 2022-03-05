@@ -34,13 +34,13 @@ class Animation():
         mapHeight: int=self.world.mapHeight
         mapWidth: int=self.world.mapWidth
 
-        # curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
-        # curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        # curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLACK)
-        # curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
-        # curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
-        # curses.init_pair(6, curses.COLOR_BROWN, curses.COLOR_BLACK)
-        # curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
         while not over:
             viewWidth, viewHeight=os.get_terminal_size()
             
@@ -63,8 +63,7 @@ class Animation():
             if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(self.world.nodes), energy=10, mutate=True))
             if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(self.world.nodes), energy=10, mutate=True))
             
-            for y in range(0, min(mapHeight-1, viewHeight-5)):
-                stdscr.addstr(y, 0, ' '*viewWidth, curses.COLOR_BLACK)
+            stdscr.clear()
 
             for y in range(0, min(mapHeight-1, viewHeight-5)):
                 row = [
@@ -92,13 +91,11 @@ class Animation():
                             node.occupant.speciesName[0].upper() 
                             if node.occupant.meateating > node.occupant.planteating 
                             else node.occupant.speciesName[0],
-                            curses.COLOR_WHITE)
-                    elif node.resource == ResourceType.grass:
-                        stdscr.addstr(y, x, '"', curses.COLOR_GREEN)
-                    elif node.resource == ResourceType.meat:
-                        stdscr.addstr(y, x, '+', curses.COLOR_RED)
-                    else:
-                        stdscr.addstr(y, x, ' ', curses.COLOR_BLACK)
+                            curses.color_pair(7))
+                    elif node.resource and node.resource.type == ResourceType.grass:
+                        stdscr.addstr(y, x, '"', curses.color_pair(2))
+                    elif node.resource and node.resource.type == ResourceType.meat:
+                        stdscr.addstr(y, x, '+', curses.color_pair(4))
 
             # show top existing species
             stdscr.addstr(viewHeight - 5, 0, f'total:{len(self.creatures)}   ')
