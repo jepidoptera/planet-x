@@ -34,6 +34,13 @@ class Animation():
         mapHeight: int=self.world.mapHeight
         mapWidth: int=self.world.mapWidth
 
+        # curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        # curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        # curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        # curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
+        # curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        # curses.init_pair(6, curses.COLOR_BROWN, curses.COLOR_BLACK)
+        # curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_BLACK)
         while not over:
             viewWidth, viewHeight=os.get_terminal_size()
             
@@ -59,21 +66,36 @@ class Animation():
             for y in range(viewY, viewY + min(mapHeight-1, viewHeight-5)):
                 row = [
                     self.world.nodes[x*mapHeight*2 + (y % 2)*mapHeight + y//2] 
-                    for x in range(viewX, viewX + viewWidth//5-5)
+                    for x in range(viewX, viewX + viewWidth//6-3)
                 ]
-                line = '' if y % 2 == 0 else '   '
-                for node in row:
+                # line = '' if y % 2 == 0 else '   '
+                # for node in row:
+                #     if node.occupant:
+                #         line += (
+                #             node.occupant.speciesName[0].upper() if node.occupant.meateating > node.occupant.planteating 
+                #             else node.occupant.speciesName[0]
+                #         )
+                #     elif node.resource:
+                #         line += '+' if node.resource.type == ResourceType.meat else '"'
+                #     else:
+                #         line += ' '
+                #     line += '     '
+                # stdscr.addstr(y-viewY, 0, line)
+
+                for i, node in enumerate(row):
+                    x=i*6 + (y%2)*3
                     if node.occupant:
-                        line += (
-                            node.occupant.speciesName[0].upper() if node.occupant.meateating > node.occupant.planteating 
-                            else node.occupant.speciesName[0]
-                        )
-                    elif node.resource:
-                        line += '+' if node.resource.type == ResourceType.meat else '"'
+                        stdscr.addstr(y-viewY, x, 
+                            node.occupant.speciesName[0].upper() 
+                            if node.occupant.meateating > node.occupant.planteating 
+                            else node.occupant.speciesName[0],
+                            curses.COLOR_WHITE)
+                    elif node.resource == ResourceType.grass:
+                        stdscr.addstr(y-viewY, x, '"', curses.COLOR_GREEN)
+                    elif node.resource == ResourceType.meat:
+                        stdscr.addstr(y-viewY, x, '+', curses.COLOR_RED)
                     else:
-                        line += ' '
-                    line += '     '
-                stdscr.addstr(y-viewY, 0, line)
+                        stdscr.addstr(y-viewY, x, ' ', curses.COLOR_BLACK)
 
             # show top existing species
             stdscr.addstr(viewHeight - 5, 0, f'total:{len(self.creatures)}   ')
