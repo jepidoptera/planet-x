@@ -52,6 +52,13 @@ def printStats(genome):
 # scene=loadWorld('deersheep tigerwolf 902643.world')
 # wolves=list(filter(lambda c: c.meateating > c.planteating, scene.creatures))
 
-brain='0014ffffed5688280325c0000325ca001126ffff11f6ffffb66f181cFF1f9fe7FF00e50b0a1affff0a1af9ff22e6d896a53c3f4a0b1dffff1a3df1723b24ffff2b18ffff2b18ffff0b180fff0b18ffff2b18ffff092b0000132aff5f'
-printBrain(brain)
+# brain='0014ffffed5688280325c0000325ca001126ffff11f6ffffb66f181cFF1f9fe7FF00e50b0a1affff0a1af9ff22e6d896a53c3f4a0b1dffff1a3df1723b24ffff2b18ffff2b18ffff0b180fff0b18ffff2b18ffff092b0000132aff5f'
+# printBrain(brain)
 
+def analysePop(world: Map, creatures: set[Creature]):
+    with open('trends.txt', 'a') as file:
+        carnivores=len(set(filter(lambda c: c.meateating > c.planteating, creatures)))
+        herbivores=len(set(filter(lambda c: c.meateating < c.planteating, creatures)))
+        grass=sum([node.resource.value if node.resource and node.resource.type == ResourceType.grass else 0 for node in world.nodes])
+        meat=sum([node.resource.value if node.resource and node.resource.type == ResourceType.meat else 0 for node in world.nodes])
+        file.write(f'carnivores: {carnivores} \n herbivores: {herbivores} \n available grass: {grass} \n available meat: {meat} \n')
