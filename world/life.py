@@ -11,6 +11,10 @@ dirname: str='species/'
 defaultMapWidth=120
 defaultMapHeight=80
 
+# this is the global metabolic rate, affecting all creatures
+# adjust down to make life harder, up to make it easier
+metaconstant=1200
+
 class Scene():
     world: Map
     creatures: set[Creature]
@@ -37,7 +41,7 @@ class Scene():
                 creature.location=random.choice(self.world.nodes)
 
         def step():
-            cycle(self.world, self.creatures)
+            cycle(self.creatures)
             self.steps += 1
             if self.stepFunction: self.stepFunction()
         self.step = step
@@ -46,14 +50,18 @@ class Scene():
         return Map(defaultMapWidth,defaultMapHeight).populateGrass(value=20, density=0.2)
 
     def growGrass(world: Map, number: int=4, value: float=20):
-        for _ in range(number):
-            random.choice(world.nodes).resource = Resource(ResourceType.grass, value)
+        nodes=[random.choice(world.nodes) for _ in range(number)]
+        for node in nodes:
+            node.resource = Resource(ResourceType.grass, value, node)
  
     def strewMeat(world: Map, number: int=1, value: float=10):
-        for _ in range(number):
-            random.choice(world.nodes).resource = Resource(ResourceType.meat, value)
+        nodes=[random.choice(world.nodes) for _ in range(ceil(number))]
+        for node in nodes:
+            if random.random() > number: break
+            number -= 1
+            node.resource = Resource(ResourceType.meat, value, node)
 
-    def randomAges(creatures: set[Creature]):
+    def randomAges(creatures: set[Creature]) -> set[Creature]:
         for creature in creatures:
             creature.age = random.random() * creature.longevity
         return creatures
@@ -102,17 +110,6 @@ class Scenarios():
         scene.stepFunction=lambda: maintainPopulations(scene)
         return scene
 
-    def scavengers(world: Map=None) -> Scene:
-        world=world or Scene.basicWorld()
-        return Scene(
-            world=world, 
-            creatures=set([
-                templates.cross(*[templates.rando(), *[templates.herbivore()]*3]) 
-                for n in range(300)
-            ]),
-            stepFunction=lambda: Scene.growGrass(world, 2, 20),
-            name='scavengers'
-        )
     def predator_prey(world: Map=None) -> Scene: 
         world=world or Scene.basicWorld()
         return Scene(
@@ -131,7 +128,7 @@ class Scenarios():
 
     def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
         world=world or Map(120,60).populateGrass(20, 0.2)
-        numOfWolves=10
+        numOfWolves=5
         if len(creatures) == 0:
             wolves=[templates.deerkiller(
                 location=random.choice(world.nodes)
@@ -224,32 +221,43 @@ class Scenarios():
         scene.stepFunction=lambda: releaseFood(scene)
         return scene
 
+    def oneonone(world: Map=None, creatures: set[Creature]=None, steps: int=0) -> Scene:
+        world=Map(32,20).populateGrass(20, 0.5)
+        creatures=set([templates.deerkiller(world.nodes[0]), templates.danrsveej(world.nodes[42])])
+        return Scene(world, creatures)
+
+    def free_meat(world: Map=None, creatures: set[Creature]=None, steps: int=0) -> Scene:
+        world=world or Map(32,20).populateGrass(20, 0.2)
+        creatures=creatures or set([templates.coyotefox(energy=10, mutate=True) for n in range(100)])
+        creatures=Scene.randomAges(creatures)
+        return Scene(world, creatures, lambda: Scene.strewMeat(world, 0.1, 100), steps=steps, name='free meat')
 
 steps:int = 0
 thoughtThreshold:int = 60
 moveThreshold:int = 60
 
-def cycle(world: Map, creatures: set[Creature]):
+def cycle(creatures: set[Creature]):
 
-    aliveCreatures: set[Creature] = set(creatures)
+    aliveCreatures=set(creatures)
     for creature in aliveCreatures:
         
         creature.thinkTimer += creature.intelligence/2
         if creature.thinkTimer > thoughtThreshold:
             creature.thinkTimer -= thoughtThreshold
             creature.think()
+            creature.energy -= len(creature.brain)/metaconstant
 
         creature.moveTimer += creature.speed
         if creature.moveTimer > moveThreshold:
             creature.moveTimer -= moveThreshold
             creature.animate()
+            creature.energy -= creature.metabolism/metaconstant
 
         creature.age += 1
-        creature.energy -= creature.metabolism
         if creature.age > creature.longevity or creature.energy < 0:
             creature.die()            
+            creatures.remove(creature)
 
-        if creature.dead: creatures.remove(creature)
         if creature.offspring: 
             creatures.add(creature.offspring)
             creature.offspring=None
@@ -339,6 +347,8 @@ def loadWorld(filename: str) -> Scene:
             return Scenarios.immortal_wolves(world=world, creatures=creatures, steps=steps)
         elif scenarioName == 'sacrificial deer':
             return Scenarios.sacrificial_deer(world=world, creatures=creatures, steps=steps)
+        elif scenarioName == 'free meat':
+            return Scenarios.free_meat(world=world, creatures=creatures, steps=steps)
         else:
             return Scene(
                 name=scenarioName,
