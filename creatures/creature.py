@@ -9,6 +9,8 @@ from creatures.genome import Genome, mergeString, modString
 from world.map import *
 import typing
 
+debug=-1
+
 class NeuronType(Enum):
     self=0
     creature=1
@@ -78,7 +80,8 @@ class DoubleAxon(Axon):
         'and': 0,
         'or': 1,
         'nor': 2,
-        'xor': 3
+        'xor': 3,
+        'and not': 4
     }
     def __init__(self, input: list[Neuron], output: Neuron, threshold: float, operator: int, factor: float):
         
@@ -93,11 +96,11 @@ class DoubleAxon(Axon):
         # just probably gonna use 8
         if self.operator == 0:
             # AND
-            if (self._input[0].activation > self.threshold and self._input[1].activation > self.threshold):
+            if (self._input[0].activation >= self.threshold and self._input[1].activation >= self.threshold):
                 self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
         elif self.operator == 1:
             # OR
-            if (self._input[0].activation > self.threshold or self._input[1].activation > self.threshold):
+            if (self._input[0].activation >= self.threshold or self._input[1].activation >= self.threshold):
                 self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
         elif self.operator == 2:
             # NOR 
@@ -105,7 +108,11 @@ class DoubleAxon(Axon):
                 self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
         elif self.operator == 3:
             # XOR
-            if (self._input[0].activation > self.threshold ^ self._input[1].activation > self.threshold):
+            if (self._input[0].activation >= self.threshold ^ self._input[1].activation >= self.threshold):
+                self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
+        elif self.operator == 4:
+            # and not
+            if (self._input[0].activation >= self.threshold and not self._input[1].activation >= self.threshold):
                 self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
 
     @property
@@ -135,13 +142,15 @@ class ActionOption():
         self.weight=weight
         self.neuron=relevantNeuron
 
-# class Brain():
+class Action():
+    attack='attack'
+    flee='flee'
+    mate='mate'
+    eat='eat'
+    wander='wander'
+    rest='rest'
 
 netIndex: dict[str, Neuron]={}
-
-# this is the global metabolic rate, affecting all creatures
-# adjust down to make life harder, up to make it easier
-metaconstant=4700
 
 class Creature():
     victim: any=None
@@ -175,6 +184,7 @@ class Creature():
             mutate: bool=False
         ):
 
+        self.uniqueID=self.__hash__()
         self._dead=False
         self._location=location
         location.occupant=self
@@ -203,6 +213,7 @@ class Creature():
         self.brain=brain or mergeString(*[g.brain for g in self.genome], chunk=8)
         self.speciesName=speciesName or mergeString(*[g.variant for g in self.genome])
 
+        self.action=Action.rest
         self.age=age
         self.justBorn=True
         self.offspringCount=offspringCount
@@ -211,8 +222,9 @@ class Creature():
         self.sprints=0
         self.rests=0
         self._metabolism=(
-            sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) for g in genomes])
-            + len(self.brain)/8) / (metaconstant * len(genomes))
+            sum([sum([stat.value * stat.metacost for stat in g.stats.values()]) 
+            for g in genomes])
+            / len(genomes))
 
         self.direction=int(random.random() * len(self.location.neighbors))
         self.thinkTimer=int(random.random() * self.intelligence)
@@ -278,6 +290,11 @@ class Creature():
     def speed(self):
         return self._speed * (2 if self.sprints else 1) * (1-self.age/self.longevity)
 
+    @speed.setter
+    def speed(self, value):
+        self._speed=value
+        return self.speed
+
     def fromHex(self, hexcode) -> Axon:
 
         if len(hexcode) == 8:
@@ -287,7 +304,7 @@ class Creature():
             return Axon(input=self.allNeurons[input], output=self.allNeurons[output], factor=factor)
 
         elif len(hexcode) == 16:
-            operator=int(hexcode[2:4], 16)//0xf8
+            operator=int(hexcode[2:4], 16) % 0xf8
             threshold=int(hexcode[4:6], 16)/0xff
             input1=int(hexcode[6:8], 16) % len(self.allNeurons)
             input2=int(hexcode[8:10], 16) % len(self.allNeurons)
@@ -384,72 +401,76 @@ class Creature():
         # un sprint
         self.sprints = max(self.sprints-1, 0)
 
-        if self.food and self.location.resource == self.food:
-            bitesize=1
-            energyValue=0
-            if self.food.type == ResourceType.meat:
-                bitesize=min(self.meateating, self.food.value)
-                energyValue=self.meateating*bitesize/7
-            elif self.food.type == ResourceType.grass:
-                bitesize=min(self.planteating, self.food.value)
-                energyValue=self.planteating*bitesize/7
-            elif self.food.type == ResourceType.fruit:
-                bitesize=min(self.planteating, self.food.value)
-                energyValue=self.planteating*bitesize/7
-            self.food.value -= bitesize
-            self.energy += energyValue
-            # all gone
-            if self.food.value <= 0: self.location.resource=None
-            return 'action_eat'
+        if self.action == Action.eat and self.food:
+            if self.location.resource == self.food:
+                bitesize=1
+                energyValue=0
+                if self.food.type == ResourceType.meat:
+                    bitesize=min(self.meateating, self.food.value)
+                    energyValue=self.meateating*bitesize/7
+                elif self.food.type == ResourceType.grass:
+                    bitesize=min(self.planteating, self.food.value)
+                    energyValue=self.planteating*bitesize/7
+                elif self.food.type == ResourceType.fruit:
+                    bitesize=min(self.planteating, self.food.value)
+                    energyValue=self.planteating*bitesize/7
+                self.food.value -= bitesize
+                self.energy += energyValue
+                # all gone
+                if self.food.value <= 0: self.location.resource=None
 
-        elif self.victim and self.victim.location in self.location.neighbors:
-            self.direction=self.location.neighbors.index(self.victim.location)
-            self.victim.health -= self.deadliness
-            Creature.processStimulus(self.victim, stimulusType='injury', target=self, magnitude=self.deadliness)
-            if self.victim.dead: self.victim=None 
-            return 'action_attack'
+        elif self.action == Action.attack and self.victim:
+            if self.victim.location in self.location.neighbors:
+                self.direction=self.location.neighbors.index(self.victim.location)
+                self.victim.health -= self.deadliness
+                Creature.processStimulus(self.victim, stimulusType='injury', target=self, magnitude=self.deadliness)
+                if self.victim.dead: self.victim=None
+            elif Map.getDistance(self.location, self.victim.location) > self.sightrange:
+                # lost them
+                self.victim=None
 
-        elif self.mate and self.mate.location in self.location.neighbors:
-            if self.energy > self.size and self.fertility > 0:
-                self.energy -= self.size
-                self.energy /= 2
-                self.fertility -= 1
-                newName=mergeString(self.speciesName, self.mate.speciesName)
-                openLocations=list(filter(lambda n: not n.occupant, self.location.neighbors))
-                if len(openLocations):
-                    birthlocation=random.choice(openLocations)
-                else:
-                    birthlocation=self.location
-                self.offspring=Creature(
-                    birthlocation, 
-                    [
-                        Genome.merge(*self.genome).mutate(), 
-                        Genome.merge(*self.mate.genome).mutate()
-                    ], 
-                    energy=self.energy,
-                    speciesName=newName
-                    if int(random.random()*10)>0 else
-                    modString(newName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random() * len(newName)))
-                )
-                self.offspringCount += 1
-                self.mate=None
-            return 'action_mate'
+        elif self.action == Action.flee and self.fear:
+            if self.path == []: self.path=Map.fleePath(self.location, self.fear.location, safeDistance=self.stamina)
+
+        elif self.action == Action.mate and self.mate:
+            if self.mate.location in self.location.neighbors:
+                if self.energy > self.size and self.fertility > 0:
+                    self.energy -= self.size
+                    self.energy /= 2
+                    self.fertility -= 1
+                    newName=mergeString(self.speciesName, self.mate.speciesName)
+                    openLocations=list(filter(lambda n: not n.occupant, self.location.neighbors))
+                    if len(openLocations):
+                        birthlocation=random.choice(openLocations)
+                    else:
+                        birthlocation=self.location
+                    self.offspring=Creature(
+                        birthlocation, 
+                        [
+                            Genome.merge(*self.genome).mutate(), 
+                            Genome.merge(*self.mate.genome).mutate()
+                        ], 
+                        energy=self.energy,
+                        speciesName=newName
+                        if int(random.random()*10)>0 else
+                        modString(newName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random() * len(newName)))
+                    )
+                    self.offspringCount += 1
+                    self.mate=None
             
-        # move along the path
-        elif (self.path):
+        # move along
+        if (self.path):
             nextMove=self.path.pop(0)
             if nextMove.occupant:
                 self.path=[]
-                return 'action_blocked'
             else:
                 self.location.occupant=None
                 self.direction=self.location.neighbors.index(nextMove)
                 self.location=nextMove
                 self.location.occupant=self
                 self.direction=min(self.direction, len(self.location.neighbors)-1)
-            return 'action_move'
-        else:
-            return 'action_rest'
+
+        return self.action
             
     def seekFood(self, foodLocation: MapNode):
         self.food=foodLocation.resource
@@ -457,6 +478,7 @@ class Creature():
             self.path=[]
         else:
             self.path=Map.findPath(self.location, foodLocation)
+        self.action=Action.eat
 
     def attack(self, other):
         self.victim=other
@@ -464,14 +486,16 @@ class Creature():
             self.path=[]
         else:
             self.path=Map.findPath(self.location, other.location)
+        self.action=Action.attack
 
     def flee(self, other):
         self.fear=other
-        self.path=Map.fleePath(self.location, other.location, safeDistance=9)
+        self.path=Map.fleePath(self.location, other.location, safeDistance=10)
         # vvv saved this old code just to compare with the elegance of this ^^^
         # toOther=Map.findPath(self.location, other.location)
         # self.direction=(self.location.neighbors.index(toOther[0])+int(len(self.location.neighbors)/2))%len(self.location.neighbors)
         # self.path=[self.location.neighbors[self.direction]]
+        self.action=Action.flee
 
     def sprint(self, _):
         self.sprints += self.stamina
@@ -483,6 +507,7 @@ class Creature():
             self.path=[]
         else:
             self.path=Map.findPath(self.location, other.location)
+        self.action=Action.mate
 
     def wander(self, _=None):
         # won't allow 'wandering' into someone else's tile
@@ -491,19 +516,28 @@ class Creature():
             self.path=[]
         else:
             self.path=[random.choice(options)]
+        self.action=Action.wander
+        return self
 
     def turnLeft(self, _=None):
         # works
         self.direction=(self.direction - 1 + len(self.location.neighbors)) % len(self.location.neighbors)
+        return self
 
     def turnRight(self, _=None):
         self.direction=(self.direction + 1) % len(self.location.neighbors)
+        return self
+
+    def faceDirection(self, direction):
+        self.direction=direction
+        return self
 
     def moveForward(self, _=None):
         self.path=[self.location.neighbors[self.direction]]
 
     def rest(self, _=None):
         self.path=[]
+        self.action=Action.rest
 
     def die(self):
         self.location.resource=Resource(ResourceType.meat, self.energy + self.size)
@@ -513,20 +547,17 @@ class Creature():
     def think(self) -> str:
         if self.speciesName == 'killerofdeer':
             er=1
+        if self.uniqueID == debug:
+            er=1
+        if self.dead: return "dead'"
 
         self.clearInputs()
         options=[self.processStimulus(target=self)]
-
         options += self.processVision(self.getVisionRanges())
-        # exhaustion
-        # options.append(ActionOption(Creature.rest, self, self.sprints / self.stamina, netIndex['action_rest']))
-
         action=max(options, key=lambda option: option.weight)
-        # if action.target:
         action.action(self, action.target)
-        # else:
-        #     action.action()
-        # propagate this action into the net, potentially setting memory neurons or smth
+
+        # propagate this action into the net, potentially setting memory neurons
         for neuron in self.actionNeurons: neuron.clear()
         action.neuron.activate(1)
         for axon in self.actionAxons:
@@ -586,13 +617,13 @@ class Creature():
         elif stimulusType == 'injury':
             netIndex['self_injury'].activate(magnitude)
 
-        # if target == self:
-        for sensor in self.selfNeurons:
-            sensor.sense(self)
-        for axon in self.selfAxons:
-            axon.fire()
+        if target == self:
+            for sensor in self.selfNeurons:
+                sensor.sense(self)
+            for axon in self.selfAxons:
+                axon.fire()
         
-        if type(target) == MapNode:
+        elif type(target) == MapNode:
             for sensor in self.envNeurons:
                 sensor.sense(target.resource)
             for axon in self.envAxons:
@@ -676,12 +707,12 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
 Creature.fromJson=staticmethod(fromJson)
 
 Creature.creatureNeurons=list[Neuron]([
-    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: other.deadliness/self.fortitude),
+    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: min(other.deadliness/self.health, 1)),
     Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age/other.longevity),
     Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health/other.fortitude),
     Neuron(NeuronType.creature, name='creature_similarity', sense=lambda self, other: self.getSimilarity(other)),
-    Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: other.speed - self.speed),
-    Neuron(NeuronType.creature, name='creature_size', sense=lambda self, other: other.size)
+    Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: sign(other.speed-self.speed)),
+    Neuron(NeuronType.creature, name='is_creature', sense=lambda self, other: True)
 ])
 
 Creature.selfNeurons=list[Neuron]([
@@ -691,9 +722,9 @@ Creature.selfNeurons=list[Neuron]([
     Neuron(NeuronType.self, name='self_sprints', sense=lambda self: 1 if self.sprints else 0),
     Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
     Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack
-    Neuron(NeuronType.self, name='self_always', sense=lambda self: True),
-    Neuron(NeuronType.self, name='self_sometimes', sense=lambda self: int(self.age % 7) == 0), 
-    Neuron(NeuronType.self, name='self_rarely', sense=lambda self: int(self.age % 77) == 0) 
+    Neuron(NeuronType.self, name='is_self', sense=lambda self: True),
+    Neuron(NeuronType.self, name='self_sometimes', sense=lambda self: int(self.age % 7 == 0)), 
+    Neuron(NeuronType.self, name='self_rarely', sense=lambda self: int(self.age % 77 == 0)) 
 ])
 
 Creature.envNeurons=list[Neuron]([
@@ -714,9 +745,9 @@ Creature.actionNeurons=list[Neuron]([
     Neuron(NeuronType.action, name='action_turnright', action=Creature.turnRight),
     Neuron(NeuronType.action, name='action_move', action=Creature.moveForward),
     Neuron(NeuronType.action, name='action_sprint', action=Creature.sprint),
-    Neuron(NeuronType.action, name='action_rest', action=Creature.rest, bias=0.1),
+    Neuron(NeuronType.action, name='action_rest', action=Creature.rest),
     Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.05),
-    Neuron(NeuronType.action, name='action_continue', action=lambda x, y: x, bias=0.1)
+    Neuron(NeuronType.action, name='action_continue', action=lambda x, y: x)
 ])
 
 # these are class level placeholders
