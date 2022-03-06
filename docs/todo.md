@@ -14,10 +14,11 @@ X double axons (and, or, multiply, divide, accumulate)
 X encode genome into one long string
 X save and load the world as a collection of map nodes and their occupants
 X optimization: stop scanning after one of each food type is found
-  creatures should have a unique ID
+X creatures should have a unique ID
 X make 'sprint' into an action (double speed for 'stamina' moves)
 X avoid making duplicates when combining genomes
-  allow creatures a fight-or-flight choice when attacked (processStimulus('self_attacked'))
+  allow creatures a fight-or-flight choice on processStimulus('self_attacked')
+  roll speed vs speed to flee or deadliness vs deadliness to fight
 
   thank kat for being sweet to bear lately :) <3
   call doug
