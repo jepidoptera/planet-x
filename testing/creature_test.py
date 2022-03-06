@@ -2,6 +2,7 @@ import unittest
 from creatures.genome import *
 from creatures.creature import *
 from creatures import templates
+from world.life import Scenarios, Scene
 from world.map import *
 
 map = Map(20, 10)
@@ -108,8 +109,8 @@ class testCreature(unittest.TestCase):
 
     def test_crossbreed(self):
         # crossbreed a bunch of shit and see if we get a viable creature
-        creature1=templates.cross(*[templates.rando(), templates.herbivore(), templates.carnivore(), templates.scavenger()])
-        creature2=templates.cross(*[templates.rando(), templates.herbivore(), templates.carnivore(), templates.scavenger()])
+        creature1=templates.cross(*[templates.rando(), templates.herbivore(), templates.carnivore(), templates.coyotefox()])
+        creature2=templates.cross(*[templates.rando(), templates.herbivore(), templates.carnivore(), templates.coyotefox()])
         creature3=templates.cross(creature1, creature2, location=random.choice(map.nodes))
         self.assertTrue(len(creature3.genome) == 2)
         thought=creature3.think()
