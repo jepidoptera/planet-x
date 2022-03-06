@@ -57,18 +57,18 @@ class Animation():
             if inKey==ord('s'): life.saveWorld(self.scenario, f'{species[0][0]} {species[1][0]} {steps}')
                 #life.saveCreatures(self.world, self.creatures, steps, f'species/{species[0][0]} {steps}.txt')
             if inKey==ord('i'): viewY = max(viewY-1, 0)
-            if inKey==ord('k'): viewY = min(viewY+1, mapHeight-viewHeight-1)
+            if inKey==ord('k'): viewY = min(viewY+1, max(mapHeight-viewHeight-1, 0))
             if inKey==ord('j'): viewX = max(viewX-1, 0)
-            if inKey==ord('l'): viewX = min(viewX+1, mapWidth-viewWidth//2+2) # 120 - 192 = 27
+            if inKey==ord('l'): viewX = min(viewX+1, max(mapWidth-viewWidth//2+2, 0)) # 120 - 192 = 27
             if inKey==ord('t'): self.creatures.add(templates.carnivore(random.choice(self.world.nodes), energy=10, mutate=True))
-            if inKey==ord('c'): self.creatures.add(templates.scavenger(random.choice(self.world.nodes), energy=10, mutate=True))
+            if inKey==ord('c'): self.creatures.add(templates.coyotefox(random.choice(self.world.nodes), energy=10, mutate=True))
             
             stdscr.clear()
 
-            for y in range(0, min(mapHeight-1, viewHeight-5)):
+            for y in range(0, min(mapHeight * 2, viewHeight-5)):
                 row = [
                     self.world.nodes[x*mapHeight*2 + ((y + viewY) % 2)*mapHeight + (y + viewY)//2] 
-                    for x in range(viewX, viewX + viewWidth//6-3)
+                    for x in range(viewX, min(viewX + viewWidth//6-3, mapWidth//2))
                 ]
                 # line = '' if y % 2 == 0 else '   '
                 # for node in row:
