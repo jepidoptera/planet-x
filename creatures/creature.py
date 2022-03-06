@@ -108,7 +108,7 @@ class DoubleAxon(Axon):
                 self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
         elif self.operator == 3:
             # XOR
-            if (self._input[0].activation >= self.threshold ^ self._input[1].activation >= self.threshold):
+            if ((self._input[0].activation >= self.threshold) ^ (self._input[1].activation >= self.threshold)):
                 self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
         elif self.operator == 4:
             # and not
@@ -242,11 +242,11 @@ class Creature():
 
     @property
     def longevity(self) -> float:
-        return self._longevity*100 # lifespan in frames
+        return self._longevity*1000 # lifespan in frames
 
     @longevity.setter
     def longevity(self, value) -> float:
-        self._longevity=value*100
+        self._longevity=value*1000
         return self._longevity
 
     @property 
@@ -600,7 +600,7 @@ class Creature():
                     other=node.occupant
                     actionOptions.append(self.processStimulus(stimulusType='creature', target=other, magnitude=1))
 
-                if (node.resource):
+                elif (node.resource):
                     if node.resource.type == ResourceType.grass and netIndex['see_grass'].activation: continue
                     if node.resource.type == ResourceType.meat and netIndex['see_meat'].activation: continue
                     actionOptions.append(self.processStimulus(stimulusType='food', target=node))
@@ -685,7 +685,7 @@ class Creature():
             'speciesName': self.speciesName,
             'offspring': self.offspringCount
         }
-        if self.longevity > 256: obj['immortal']=True
+        if self.longevity > 1000000: obj['immortal']=True
         return obj
 
 def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
@@ -707,18 +707,18 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
 Creature.fromJson=staticmethod(fromJson)
 
 Creature.creatureNeurons=list[Neuron]([
-    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: min(other.deadliness/self.health, 1)),
+    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: min(other.deadliness/self.health, 1) if self.health else 0),
     Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age/other.longevity),
     Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health/other.fortitude),
     Neuron(NeuronType.creature, name='creature_similarity', sense=lambda self, other: self.getSimilarity(other)),
     Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: sign(other.speed-self.speed)),
-    Neuron(NeuronType.creature, name='is_creature', sense=lambda self, other: True)
+    Neuron(NeuronType.creature, name='creature_exists', sense=lambda self, other: True)
 ])
 
 Creature.selfNeurons=list[Neuron]([
-    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy/self.size),
-    Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health/self.fortitude),
-    Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age/self.longevity),
+    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy/self.size if self.size else 0),
+    Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health/self.fortitude if self.health else 0),
+    Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age/self.longevity if self.longevity else 0),
     Neuron(NeuronType.self, name='self_sprints', sense=lambda self: 1 if self.sprints else 0),
     Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
     Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack
