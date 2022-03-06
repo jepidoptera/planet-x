@@ -69,27 +69,34 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             output=netIndex['action_mate'],
             threshold=0.9,
             operator=DoubleAxon.operators['and'],
-            factor=1.0
+            factor=0.5
         ),
-        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.7),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 0.7),
-        Axon(netIndex['self_sometimes'], netIndex['action_wander'], 1.0),
         Axon(netIndex['creature_deadliness'], netIndex['memory_0'], 1.0),
         Axon(netIndex['creature_deadliness'], netIndex['memory_1'], 1.0),
-        Axon(netIndex['memory_0'], netIndex['action_sprint'], 0.9),
-        Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
-        Axon(netIndex['memory_1'], netIndex['action_continue'], 0.9),
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
+        Axon(netIndex['memory_1'], netIndex['action_sprint'], 0.6),
+        Axon(netIndex['action_sprint'], netIndex['memory_1'], -1.0),
+        Axon(netIndex['memory_0'], netIndex['action_mate'], -1.0),
+        Axon(netIndex['memory_0'], netIndex['action_eat'], -1.0),
+        Axon(netIndex['self_sprints'], netIndex['action_continue'], 1.0),
         Axon(netIndex['self_rarely'], netIndex['memory_1'], -1.0),
+        DoubleAxon(
+            input=[netIndex['memory_0'], netIndex['memory_1']],
+            output=netIndex['action_turnleft'],
+            threshold=1.0,
+            operator=DoubleAxon.operators['and not'],
+            factor=0.9
+        ),
+        Axon(netIndex['action_turnleft'], netIndex['memory_0'], -0.9),
     ])
 
     return Creature(
         location=location,
         genomes=[Genome(
             deadliness=0, 
-            speed=6, 
-            stamina=6, 
+            speed=7, 
+            stamina=12, 
             fortitude=2, 
             intelligence=13, 
             longevity=42, 
@@ -107,27 +114,27 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         mutate=mutate
     )
 
-def scavenger(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
+def coyotefox(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     scavenger_mind = [
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
-        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
-        Axon(netIndex['memory_7'], netIndex['relay_7'], 1.0),
-        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
-        Axon(netIndex['relay_7'], netIndex['action_mate'], -0.5),
-        Axon(netIndex['self_energy'], netIndex['relay_7'], -0.01),
-        Axon(netIndex['self_always'], netIndex['action_turnleft'], 0.5),
+        DoubleAxon(
+            input=[netIndex['creature_similarity'], netIndex['self_energy']],
+            output=netIndex['action_mate'],
+            threshold=0.9,
+            operator=DoubleAxon.operators['and'],
+            factor=0.5
+        ),
+        Axon(netIndex['creature_similarity'], netIndex['action_turnleft'], 0.5),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 0.9)
     ]
     return Creature(
         location=location, 
         genomes=[Genome(
-            deadliness=0, 
-            speed=3, 
-            stamina=3, 
+            deadliness=1, 
+            speed=6, 
+            stamina=6, 
             fortitude=2, 
-            intelligence=20, 
+            intelligence=13, 
             longevity=20, 
             fertility=9, 
             meateating=7, 
@@ -230,12 +237,13 @@ def deerkiller(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
     brain=[
         Axon(netIndex['creature_health'], netIndex['action_attack'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
+        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
     ]
     killer=Creature(
         location=location,  
         genomes=[Genome(
             deadliness=4, 
-            speed=12, 
+            speed=10, 
             stamina=8, 
             fortitude=3, 
             intelligence=13, 
