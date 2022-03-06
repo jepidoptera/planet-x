@@ -6,6 +6,7 @@ from creatures.genome import *
 import random
 import json
 from typing import Callable
+import analysis
 
 dirname: str='species/'
 defaultMapWidth=120
@@ -13,7 +14,9 @@ defaultMapHeight=80
 
 # this is the global metabolic rate, affecting all creatures
 # adjust down to make life harder, up to make it easier
-metaconstant=1200
+metaconstant=400
+
+logAnalysis=True
 
 class Scene():
     world: Map
@@ -44,12 +47,15 @@ class Scene():
             cycle(self.creatures)
             self.steps += 1
             if self.stepFunction: self.stepFunction()
+            if logAnalysis and self.steps % 50 == 0:
+                analysis.analysePop(self.world, self.creatures)
+
         self.step = step
 
     def basicWorld():
         return Map(defaultMapWidth,defaultMapHeight).populateGrass(value=20, density=0.2)
 
-    def growGrass(world: Map, number: int=4, value: float=20):
+    def growGrass(world: Map, number: int=32, value: float=5):
         nodes=[random.choice(world.nodes) for _ in range(number)]
         for node in nodes:
             node.resource = Resource(ResourceType.grass, value, node)
@@ -76,7 +82,7 @@ class Scenarios():
                 templates.rando() 
                 for n in range(300)
             ]),
-            stepFunction=lambda: Scene.growGrass(world, 2, 20),
+            stepFunction=lambda: Scene.growGrass(world),
             name='random creatures'
         )
 
@@ -100,7 +106,7 @@ class Scenarios():
                     scene.creatures.add(templates.cross(deers[0], deers[1], location=random.choice(world.nodes), mutate=True))
                 # for n in range(optimalWolves - len(wolves)):
                 #     scene.creatures.add(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes), mutate=True))
-            Scene.growGrass(world, 4, 20)
+            Scene.growGrass(world)
 
         scene=Scene(
             world=world, 
@@ -110,11 +116,11 @@ class Scenarios():
         scene.stepFunction=lambda: maintainPopulations(scene)
         return scene
 
-    def predator_prey(world: Map=None) -> Scene: 
+    def predator_prey(world: Map=None, creatures: set[Creature]=None) -> Scene: 
         world=world or Scene.basicWorld()
         return Scene(
             world=world, 
-            creatures=set([
+            creatures=creatures or set([
                 templates.danrsveej(mutate=True) 
                 for n in range(500)
             ] +
@@ -122,8 +128,8 @@ class Scenarios():
                 templates.quiltrpolf(mutate=True)
                 for n in range(30)
             ]),
-            stepFunction=lambda: Scene.growGrass(world, 2, 20),
-            name='predators and prey'
+            stepFunction=lambda: Scene.growGrass(world),
+            name='predator/prey'
         )
 
     def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
@@ -151,7 +157,7 @@ class Scenarios():
         def maintainStasis():
             for wolf in wolves:
                 wolf.energy=10
-            Scene.growGrass(world, 4, 20)
+            Scene.growGrass(world)
 
         return Scene(
             world=world, 
@@ -187,7 +193,7 @@ class Scenarios():
                     scene.creatures.add(templates.cross(deers[0], deers[1], location=random.choice(world.nodes), mutate=True))
                 # for n in range(optimalWolves - len(wolves)):
                 #     scene.creatures.add(templates.cross(wolves[0], wolves[1], location=random.choice(world.nodes), mutate=True))
-            Scene.growGrass(world, 2, 20)
+            Scene.growGrass(world)
 
         scene=Scene(
             world=world,
@@ -210,7 +216,7 @@ class Scenarios():
         def releaseFood(scene: Scene):
             if scene.steps % 10 == 0:
                 scene.creatures.add(templates.herbivore(location=random.choice(world.nodes), energy=100))
-            Scene.growGrass(world, 1, 20)
+            Scene.growGrass(world)
 
         scene=Scene(
             world=world,
@@ -349,12 +355,14 @@ def loadWorld(filename: str) -> Scene:
             return Scenarios.sacrificial_deer(world=world, creatures=creatures, steps=steps)
         elif scenarioName == 'free meat':
             return Scenarios.free_meat(world=world, creatures=creatures, steps=steps)
+        elif scenarioName == 'predator/prey':
+            return Scenarios.free_meat(world=world, creatures=creatures, steps=steps)
         else:
             return Scene(
                 name=scenarioName,
                 world=world,
                 creatures=creatures,
-                stepFunction=lambda: Scene.growGrass(world, 4, 25),
+                stepFunction=lambda: Scene.growGrass(world),
                 steps=steps
             )
 
