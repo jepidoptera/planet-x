@@ -34,6 +34,10 @@ for arg, value in args:
             scenario=life.Scenarios.immortal_wolves()
         elif value == 'sacrificial deer':
             scenario=life.Scenarios.sacrificial_deer()
+        elif value == 'oneonone':
+            scenario=life.Scenarios.oneonone()
+        elif value == 'free meat':
+            scenario=life.Scenarios.free_meat()
         elif value == 'random':
             scenario = life.Scenarios.random_creatures()
 
