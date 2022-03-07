@@ -288,7 +288,7 @@ class Creature():
 
     @property
     def speed(self):
-        return self._speed * (2 if self.sprints else 1) * (1-self.age/self.longevity)
+        return self._speed * (2 if self.sprints else 1) * (1-self.age**2/self.longevity**2)
 
     @speed.setter
     def speed(self, value):
@@ -434,10 +434,9 @@ class Creature():
 
         elif self.action == Action.mate and self.mate:
             if self.mate.location in self.location.neighbors:
-                if self.energy > self.size and self.fertility > 0:
+                if self.energy > self.size + self.size/self.fertility and self.fertility > self.offspringCount:
                     self.energy -= self.size
-                    self.energy /= 2
-                    self.fertility -= 1
+                    self.energy -= self.size/self.fertility
                     newName=mergeString(self.speciesName, self.mate.speciesName)
                     openLocations=list(filter(lambda n: not n.occupant, self.location.neighbors))
                     if len(openLocations):
@@ -450,7 +449,7 @@ class Creature():
                             Genome.merge(*self.genome).mutate(), 
                             Genome.merge(*self.mate.genome).mutate()
                         ], 
-                        energy=self.energy,
+                        energy=self.size/self.fertility,
                         speciesName=newName
                         if int(random.random()*10)>0 else
                         modString(newName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random() * len(newName)))
@@ -553,7 +552,7 @@ class Creature():
 
         self.clearInputs()
         options=[self.processStimulus(target=self)]
-        options += self.processVision(self.getVisionRanges())
+        options += self.processVision(self.location.getVision(self.direction, self.sightrange, self.sightfield))
         action=max(options, key=lambda option: option.weight)
         action.action(self, action.target)
 
