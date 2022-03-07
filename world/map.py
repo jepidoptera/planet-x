@@ -30,7 +30,35 @@ class MapNode():
         self.y=y
         self.z=z
 
+    def getVision(self, lookDirection: int, distance: int, viewAngle: int):
+        visionRanges: list[set[MapNode]]=[set() for n in range(distance + 1)]
+        visionRanges[0].add(self)
+
+        def rotateLeft(origin: MapNode, direction: int, amount: int):
+            return (direction - amount) % len(origin.neighbors)
+
+        def rotateRight(origin: MapNode, direction: int, amount: int):
+            return (direction + amount) % len(origin.neighbors)
+
+        forwardNode: MapNode=self
+        for d in range(1, distance + 1):
+            nodesInRange=int(min(d*viewAngle + 2, d*6))
+            forwardNode=forwardNode.neighbors[lookDirection]
+            visionRanges[d].add(forwardNode)
+            
+            for rotation in [rotateRight, rotateLeft]:
+                scanDirection=rotation(forwardNode, lookDirection, 2)
+                scanningNode: MapNode=forwardNode
+                for n in range(nodesInRange//2):
+                    if n > 0 and n % d == 0:
+                        scanDirection=rotation(scanningNode, scanDirection, 1)
+                    scanningNode=scanningNode.neighbors[scanDirection]
+                    visionRanges[d].add(scanningNode)
+
+        return visionRanges
+
     def calcVisionTree(self, distance: int):
+        return
         mergedDict={n:True for n in self.neighbors + [self]}
         visionTree=[[[node]] + [[] for i in range(distance - 1)] for node in self.neighbors]
 
@@ -62,10 +90,12 @@ class MapNode():
         
         self.visionTree=visionTree
 
+
 class Map():
     def __init__(self, mapWidth, mapHeight):
-        self.mapHeight=mapHeight
-        self.mapWidth=mapWidth
+        mapHeight=mapHeight//2*2
+        mapWidth=mapWidth//2*2
+        self.mapWidth, self.mapHeight=mapWidth, mapHeight
         self.totalNodes=mapWidth * mapHeight
         self.nodes=[MapNode(n, []) for n in range(self.totalNodes)]
         
@@ -82,14 +112,35 @@ class Map():
             else:
                 # even row
                 neighborIndexes=[-1, mapHeight - 1, mapHeight, 1, -mapHeight, -mapHeight - 1]
+            
+            # corrections to wrap around at the edge of the map
+            if node.x == 0:
+                neighborIndexes[4] += mapHeight * mapWidth
+                neighborIndexes[5] += mapHeight * mapWidth
+            elif node.x == mapWidth-1:
+                neighborIndexes[1] -= mapHeight * mapWidth
+                neighborIndexes[2] -= mapHeight * mapWidth
+            
+            if node.y == 0:
+                neighborIndexes[0] += mapHeight
+                neighborIndexes[1] += mapHeight
+                neighborIndexes[5] += mapHeight
+            elif node.y == 0.5:
+                neighborIndexes[0] += mapHeight
+            elif node.y == mapHeight-1:
+                neighborIndexes[3] -= mapHeight
+            elif node.y == mapHeight-0.5:
+                neighborIndexes[2] -= mapHeight
+                neighborIndexes[3] -= mapHeight
+                neighborIndexes[4] -= mapHeight
             for _, n in enumerate(neighborIndexes):
-                if (i + n) >= 0 and (i + n) < len(self.nodes):
+                # if (i + n) >= 0 and (i + n) < len(self.nodes):
                     newNeighbor=self.nodes[(i + n) % self.totalNodes]
-                    if (abs(newNeighbor.x-node.x <= 1) 
-                        and abs(newNeighbor.y-node.y <= 1) 
-                        and abs(newNeighbor.z - node.z <= 1)
-                    ):
-                        node.neighbors.append(newNeighbor)
+                    # if (abs(newNeighbor.x-node.x <= 1) 
+                    #     and abs(newNeighbor.y-node.y <= 1) 
+                    #     and abs(newNeighbor.z - node.z <= 1)
+                    # ):
+                    node.neighbors.append(newNeighbor)
 
         for node in self.nodes:
             node.calcVisionTree(7)
@@ -100,12 +151,7 @@ class Map():
                 node.resource=Resource(ResourceType.grass, value, node)
         return self
 
-    def print(self):
-        for y in range(self.mapHeight):
-            print (''.join(["{0}    ".format(y + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
-            print (''.join(["  {0}  ".format(y + self.mapHeight + n * self.mapHeight * 2) for n in range(int(self.mapWidth / 2))]))
-
-    def printVisionCone(self, startIndex: int, direction: int, distance: int, coneWidth: int):
+    def parseVisionTree(self, startIndex: int, direction: int, distance: int, coneWidth: int):
         cones=[
             # layer[a] for a in range[distance]
             self.nodes[startIndex].visionTree[(direction + n) % len(self.nodes[startIndex].neighbors)][:distance] 
@@ -119,17 +165,22 @@ class Map():
             for node in cone] for i in range(distance)
         ]
         nodeList=[node for cone in visionLayers for node in cone]
+        
+    def print(self, highlights: set[MapNode]=set()):
+
         # visionCone=self.nodes[startIndex].visionTree[direction]
         # nodeList=[node.index for layer in visionCone[:distance] for node in layer]
 
-        def showVision(index: int) -> str:
-            if index == startIndex: return "▓"* len(str(index))
-            if index in nodeList: return "█"*(len(str(index)))
+        def highlight(index) -> str:
+            if not highlights: return str(index)
+            if self.nodes[index] in highlights: return "█"*(len(str(index)))
             return str(index) 
 
         for y in range(self.mapHeight):
-            print(''.join(["{0}    ".format(showVision(y + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
-            print(''.join(["  {0}  ".format(showVision(y + self.mapHeight + n * self.mapHeight * 2)) for n in range(int(self.mapWidth / 2))]))
+            oddRow=[self.nodes[y + n * self.mapHeight * 2] for n in range(int(self.mapWidth / 2))]
+            evenRow=[self.nodes[y + self.mapHeight + n * self.mapHeight * 2] for n in range(int(self.mapWidth / 2))]
+            print(''.join(["{0}   ".format(highlight(' ' * (3-len(str(node.index))) + str(node.index))) for node in oddRow]))
+            print(''.join(["   {0}".format(highlight(' ' * (3-len(str(node.index))) + str(node.index))) for node in evenRow]))
 
     @staticmethod
     def fleePath(startNode: MapNode, fleeFrom:MapNode, safeDistance:int=5):
