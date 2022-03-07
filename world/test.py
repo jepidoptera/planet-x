@@ -1,19 +1,19 @@
-from world.map import *
-from creatures.creature import *
-from creatures.genome import *
-from creatures import templates
-from testing import creature_test, genome_test, map_test
-
-creature_test.testCreature.test_brain()
+from map import *
 
 mapWidth = 30
 mapHeight = 20
-centerTile = int(mapWidth * mapHeight / 2 + mapHeight / 2)
 testmap = Map(mapWidth, mapHeight)
+centerTile = testmap.nodes[int(mapWidth * mapHeight / 2 + mapHeight / 2)]
 # calcVisionTree(testmap.nodes[146], 8)
-for n in range(6):
-    testmap.printVisionCone(centerTile, n, 7, 2)
+for n in range(0, 12):
+    # testmap.printVisionCone(centerTile, n, 7, 2)
+    vision=centerTile.getVision(5, int(12-n/2), n/2)
+    for node in testmap.nodes:
+        node.index='.'
+    for d, layer in enumerate(vision):
+        for node in layer:
+            node.index=d
+    testmap.print()
     print()
 print()
-testmap.printVisionCone(centerTile, 0, 0, 0)
 
