@@ -11,9 +11,9 @@ class testGenome(unittest.TestCase):
         self.assertTrue(brainLength % 8 == 0)
         gene1.mutate(1, 'addAxon')
         self.assertTrue(len(gene1.brain) == brainLength + 8)
-        gene1.mutate(1, 'deleteAxon')
+        gene1.mutate(1, 'deleteaxon')
         self.assertTrue(len(gene1.brain) == brainLength)
-        gene1.mutate(1, 'doubleAxon')
+        gene1.mutate(1, 'doubleaxon')
         self.assertTrue(len(gene1.brain) == brainLength + 8)
         self.assertTrue(gene1.brain.find('FF') >= 0)
 
