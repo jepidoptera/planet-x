@@ -9,8 +9,8 @@ from typing import Callable
 import analysis
 
 dirname: str='species/'
-defaultMapWidth=120
-defaultMapHeight=80
+defaultMapWidth=240
+defaultMapHeight=160
 
 # this is the global metabolic rate, affecting all creatures
 # adjust down to make life harder, up to make it easier
@@ -55,7 +55,8 @@ class Scene():
     def basicWorld():
         return Map(defaultMapWidth,defaultMapHeight).populateGrass(value=20, density=0.2)
 
-    def growGrass(world: Map, number: int=32, value: float=5):
+    def growGrass(world: Map, number: int=0, value: float=5):
+        if not(number): number=int(len(world.nodes)/1200)
         nodes=[random.choice(world.nodes) for _ in range(number)]
         for node in nodes:
             node.resource = Resource(ResourceType.grass, value, node)
@@ -116,25 +117,27 @@ class Scenarios():
         scene.stepFunction=lambda: maintainPopulations(scene)
         return scene
 
-    def predator_prey(world: Map=None, creatures: set[Creature]=None) -> Scene: 
+    def predator_prey(world: Map=None, creatures: set[Creature]=None, steps: int=0) -> Scene: 
         world=world or Scene.basicWorld()
+        creatures=creatures or set([
+            templates.danrsveej(mutate=True) 
+            for n in range(500)
+        ] +
+        [
+            templates.quiltrpolf(mutate=True)
+            for n in range(30)
+        ])
         return Scene(
             world=world, 
-            creatures=creatures or set([
-                templates.danrsveej(mutate=True) 
-                for n in range(500)
-            ] +
-            [
-                templates.quiltrpolf(mutate=True)
-                for n in range(30)
-            ]),
+            creatures=creatures,
             stepFunction=lambda: Scene.growGrass(world),
+            steps=steps,
             name='predator/prey'
         )
 
     def immortal_wolves(world: Map=None, creatures: set[Creature]=set(), steps: int=0) -> Scene: 
-        world=world or Map(120,60).populateGrass(20, 0.2)
-        numOfWolves=5
+        world=world or Scene.basicWorld()
+        numOfWolves=25
         if len(creatures) == 0:
             wolves=[templates.deerkiller(
                 location=random.choice(world.nodes)
@@ -356,7 +359,7 @@ def loadWorld(filename: str) -> Scene:
         elif scenarioName == 'free meat':
             return Scenarios.free_meat(world=world, creatures=creatures, steps=steps)
         elif scenarioName == 'predator/prey':
-            return Scenarios.free_meat(world=world, creatures=creatures, steps=steps)
+            return Scenarios.predator_prey(world=world, creatures=creatures, steps=steps)
         else:
             return Scene(
                 name=scenarioName,
