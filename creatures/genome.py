@@ -199,7 +199,7 @@ class Genome():
 
             brainMutation = (
                 True if mutationType in ['brain', 'addaxon', 'deleteaxon', 'doubleaxon'] 
-                else int(random.random() * 2)
+                else int(random.random() * 1.5)
             )
 
             if (brainMutation):
