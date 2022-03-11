@@ -4,93 +4,93 @@ import random
 
 # genome
 class Stat():
-    min = 0
-    max = infinity
+    min=0
+    max=infinity
     metacost:float=0.0
     growcost:float=0.0
-    def __init__(self, value, min:int = 0, max:int = 0, metacost:float = 0.0, growcost:float = 0.0):
-        if max: self.max = max
-        if min: self.min = min
-        if metacost: self.metacost = metacost
-        if growcost: self.growcost = growcost
-        self.value = value
+    def __init__(self, value, min:int=0, max:int=0, metacost:float=0.0, growcost:float=0.0):
+        if max: self.max=max
+        if min: self.min=min
+        if metacost: self.metacost=metacost
+        if growcost: self.growcost=growcost
+        self.value=value
 
     def __add__(self, n):
-        self.value = max(min(self.value + n, self.max), self.min)
+        self.value=max(min(self.value + n, self.max), self.min)
         return self
     
     def __sub__(self, n):
-        self.value = min(max(self.value - n, self.min), self.max)
+        self.value=min(max(self.value - n, self.min), self.max)
         return self
 
 class Fortitude(Stat):
-    min = 1
-    max = 7
-    metacost = 1.0
-    growcost = 1.5
+    min=1
+    max=7
+    metacost=1.0
+    growcost=1.5
 
 class Deadliness(Stat):
-    max = 7
-    metacost = 4.0
-    growcost = 4.0
+    max=7
+    metacost=4.0
+    growcost=4.0
 
 class Speed(Stat):
-    max = 12
-    metacost = 4.0
-    growcost = 1.0
+    max=12
+    metacost=4.0
+    growcost=1.0
 
 class Longevity(Stat):
-    min = 1
-    max = infinity # imortality would require infinite energy tho
-    metacost = 0.8
-    growcost = 1.0
+    min=1
+    max=infinity # imortality would require infinite energy tho
+    metacost=0.8
+    growcost=1.0
 
 class Intelligence(Stat):
-    min = 10
-    max = 60
-    metacost = 0.3
-    growcost = 0.1
+    min=10
+    max=60
+    metacost=0.3
+    growcost=0.1
 
 class MeatEating(Stat):
-    max = 7
-    metacost = 1.0
-    growcost = 4.0
+    max=7
+    metacost=1.0
+    growcost=4.0
 
 class PlantEating(Stat):
-    max = 7
-    metacost = 1.0
-    growcost = 0.0
+    max=7
+    metacost=1.0
+    growcost=0.0
 
 class Fertility(Stat):
-    max = 10
-    metacost = 4.0
-    growcost = 0.0
+    max=10
+    metacost=4.0
+    growcost=0.0
 
 class SightRange(Stat):
-    max = 7
-    metacost = 1.0
-    growcost = 0.4
+    max=7
+    metacost=1.0
+    growcost=0.4
 
 class SightField(Stat):
-    min = 1
-    max = 4
-    metacost = 1.0
-    growcost = 0.4
+    min=1
+    max=4
+    metacost=1.0
+    growcost=0.4
 
 class Stamina(Stat):
-    min = 1
-    max = 7
-    metacost = 1.0
-    growcost = 1.0
+    min=1
+    max=7
+    metacost=1.0
+    growcost=1.0
 
 class Genome():
     mutationRate=1
     mutations=0
-    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, brain: str, variant: str='', mutations: int=0):
+    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, axonStr: str, neuronStr: str='', variant: str='', mutations: int=0):
 
-        # gene = Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
+        # gene=Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
 
-        self.stats:dict[str: Stat] = {
+        self.stats:dict[str: Stat]={
             "deadliness": Deadliness(value=deadliness),
             "speed": Speed(value=speed), 
             "stamina": Stamina(value=stamina),
@@ -104,7 +104,8 @@ class Genome():
             "sight field": SightField(value=sightfield)
         }
         self.phenomize()
-        self.brain=brain
+        self.axonStr=axonStr
+        self.neuronStr=neuronStr
         self.mutations=mutations
         self.variant=variant or ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(9)])
         # *size
@@ -124,20 +125,20 @@ class Genome():
 
     def phenomize(self):
         # phenome
-        self._deadliness = self.stats["deadliness"].value
-        self._speed = self.stats["speed"].value
-        self._stamina = self.stats["stamina"].value
-        self._fortitude = self.stats["fortitude"].value
-        self._intelligence = self.stats["intelligence"].value
-        self._longevity = self.stats["longevity"].value
-        self._fertility = self.stats["fertility"].value
-        self._meateating = self.stats["meat eating"].value
-        self._planteating = self.stats["plant eating"].value
-        self._sightrange = self.stats["sight range"].value
-        self._sightfield = self.stats["sight field"].value
+        self._deadliness=self.stats["deadliness"].value
+        self._speed=self.stats["speed"].value
+        self._stamina=self.stats["stamina"].value
+        self._fortitude=self.stats["fortitude"].value
+        self._intelligence=self.stats["intelligence"].value
+        self._longevity=self.stats["longevity"].value
+        self._fertility=self.stats["fertility"].value
+        self._meateating=self.stats["meat eating"].value
+        self._planteating=self.stats["plant eating"].value
+        self._sightrange=self.stats["sight range"].value
+        self._sightfield=self.stats["sight field"].value
         self.stats["sight field"].metacost=self._sightrange/4
 
-        self._size = Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)        
+        self._size=Stat(value=sum([stat.value for stat in self.stats.values()]), max=99, metacost=1.0, growcost=0)        
     
     @property
     def size(self):
@@ -197,31 +198,44 @@ class Genome():
             if self.mutations % 10 == 0:
                 self.variant=modString(self.variant, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random()*len(self.variant)))
 
-            brainMutation = (
-                True if mutationType in ['brain', 'addaxon', 'deleteaxon', 'doubleaxon'] 
+            brainMutation=(
+                True if mutationType in ['brain', 'axon', 'neuron'] 
                 else int(random.random() * 1.5)
             )
 
             if (brainMutation):
-                addAxon = (
-                    True if mutationType in ['addaxon', 'doubleaxon'] 
-                    else int(random.random()*1.5)
-                )
-                if addAxon:
-                    newAxon=''.join([random.choice('1234567890abcdef') for _ in range(8)])
-                    doubleAxon=True if mutationType=='doubleaxon' else int(random.random()*1.5)
-                    if doubleAxon:
-                        newAxon='FF' + newAxon[2:]
-                    insertionPoint=int(random.random() * len(self.brain)/8)*8
-                    self.brain=self.brain[:insertionPoint] + newAxon + self.brain[insertionPoint:]
+                # replace axons only - or more likely, adjust the weights and biases
+                axonMutation=True if mutationType=='axon' else int(random.random()*2)
+                if axonMutation:
+                    axonNum=int(random.random()*len(self.axonStr)//8)
+                    weight=int(self.axonStr[axonNum*8 + 4: axonNum*8 + 8], 16)
+                    weight=int(max(min(0xffff, weight + random.random() * 0x1000 - 0x800), 0))
+                    self.axonStr=self.axonStr[:axonNum*8 + 4] + hex(weight)[2:].zfill(4) + self.axonStr[axonNum*8 + 8:]
                 else:
-                    deleteAxon=True if mutationType == 'deleteaxon' else int(random.random()*1.5)
-                    if deleteAxon:
-                        if len(self.brain) < 8: return # this should not happen, but
-                        deletionPoint=int(random.random() * (len(self.brain)-8)/8)*8
-                        self.brain=self.brain[:deletionPoint] + self.brain[deletionPoint + 8:]
-                    else:
-                        self.brain=modString(self.brain, random.choice('1234567890abcdef'), int(random.random() * len(self.brain)))
+                    neuronNum=int(random.random()*len(self.neuronStr)//4)
+                    print (neuronNum, self.neuronStr)
+                    bias=int(self.neuronStr[neuronNum*4 + 2: neuronNum*4 + 4], 16)
+                    bias=int(max(min(0xff, bias + random.random() * 0x10 - 0x8), 0))
+                    self.neuronStr=self.neuronStr[:neuronNum*4 + 2] + hex(bias)[2:].zfill(2) + self.neuronStr[neuronNum*4 + 4:]
+                # addAxon=(
+                #     True if mutationType in ['addaxon', 'doubleaxon'] 
+                #     else int(random.random()*1.5)
+                # )
+                # if addAxon:
+                #     newAxon=''.join([random.choice('1234567890abcdef') for _ in range(8)])
+                #     doubleAxon=True if mutationType=='doubleaxon' else int(random.random()*1.5)
+                #     if doubleAxon:
+                #         newAxon='FF' + newAxon[2:]
+                #     insertionPoint=int(random.random() * len(self.brain)/8)*8
+                #     self.brain=self.brain[:insertionPoint] + newAxon + self.brain[insertionPoint:]
+                # else:
+                #     deleteAxon=True if mutationType == 'deleteaxon' else int(random.random()*1.5)
+                #     if deleteAxon:
+                #         if len(self.brain) < 8: return # this should not happen, but
+                #         deletionPoint=int(random.random() * (len(self.brain)-8)/8)*8
+                #         self.brain=self.brain[:deletionPoint] + self.brain[deletionPoint + 8:]
+                #     else:
+                #         self.brain=modString(self.brain, random.choice('1234567890abcdef'), int(random.random() * len(self.brain)))
             else:
                 self.stats[random.choice(list(self.stats.keys()))] += int(random.random() * 2) * 2 - 1
 
@@ -231,7 +245,7 @@ class Genome():
         genes=self.variant + '|' + str(self.mutations) + '|'
         for value in self.stats.values():
             genes += hex(value.value)[2:].zfill(2)
-        genes += '0X' + self.brain
+        genes += '0X' + self.axonStr
         return genes
 
     def printStats(self):
@@ -255,18 +269,19 @@ class Genome():
 
 def randomGenome():
     return Genome(
-        deadliness = int(random.random() * (Deadliness.max + 1)),
-        speed = int(random.random() * (Speed.max + 1)),
-        stamina = int(random.random() * (Stamina.max) + 1),
-        fortitude = int(random.random() * (Fortitude.max) + 1),
-        intelligence = int(random.random() * (Intelligence.max - Intelligence.min + 1) + Intelligence.min),
-        longevity =int(random.random() * (50) + 1),
-        fertility = int(random.random() * (Fertility.max + 1)),
-        meateating = int(random.random() * (MeatEating.max + 1)),
-        planteating = int(random.random() * (PlantEating.max + 1)),
-        sightrange = int(random.random() * (SightRange.max + 1)),
-        sightfield = int(random.random() * (SightField.max) + 1),
-        brain = "".join(random.choice('abcdef1234567890') for i in range(128)),
+        deadliness=int(random.random() * (Deadliness.max + 1)),
+        speed=int(random.random() * (Speed.max + 1)),
+        stamina=int(random.random() * (Stamina.max) + 1),
+        fortitude=int(random.random() * (Fortitude.max) + 1),
+        intelligence=int(random.random() * (Intelligence.max - Intelligence.min + 1) + Intelligence.min),
+        longevity=int(random.random() * (50) + 1),
+        fertility=int(random.random() * (Fertility.max + 1)),
+        meateating=int(random.random() * (MeatEating.max + 1)),
+        planteating=int(random.random() * (PlantEating.max + 1)),
+        sightrange=int(random.random() * (SightRange.max + 1)),
+        sightfield=int(random.random() * (SightField.max) + 1),
+        axonStr="".join(random.choice('abcdef1234567890') for i in range(64)),
+        neuronStr="".join("".join([hex(i)[2:].zfill(2) + "".join(random.choice('abcdef1234567890') for _ in range(2))]) for i in range(0x60)),
         variant=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(9)])
     )
 
@@ -283,13 +298,13 @@ def emptyGenome():
         planteating=0,
         sightrange=0,
         sightfield=0,
-        brain = "",
+        axonStr="",
         variant=''
     )
 
 def merge(*args: Genome) -> Genome:
     if len(args) == 1: return args[0]
-    merged = Genome(
+    merged=Genome(
         mutations=max(*[g.mutations for g in args]),
         deadliness=random.choice([g.deadliness for g in args]),
         speed=random.choice([g._speed for g in args]),
@@ -302,7 +317,7 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        brain=mergeBrains(*[g.brain for g in args]),
+        axonStr=mergeBrains(*[g.axonStr for g in args]),
         variant=mergeString(*[g.variant for g in args], chunk=1)
     )
     return merged
@@ -370,7 +385,7 @@ def decode(genes: str) -> Genome:
         g.stats[stat].value=int(genes[2*i:2*i+2], 16)
     g.phenomize()
     brain=genes[genes.index('0X')+2:]
-    g.brain=brain
+    g.axonStr=brain
     return g
 
 Genome.merge=staticmethod(merge)
@@ -411,8 +426,8 @@ def avgMutations(rate, f):
     return avg / reps
 
 def convergence(x):
-    s = 0
-    y = 1
+    s=0
+    y=1
     for _ in range(1000):
         y *= x/(x+1)
         s += y
