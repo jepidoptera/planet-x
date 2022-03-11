@@ -54,7 +54,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=7, 
             sightrange=4, 
             sightfield=3, 
-            brain=axonsToHex(herbivore_mind),
+            axonStr=axonsToHex(herbivore_mind),
             variant='deersheep'
         )], 
         speciesName='deersheep',
@@ -105,7 +105,7 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=7, 
             sightrange=4, 
             sightfield=3, 
-            brain=deerbrain,
+            axonStr=deerbrain,
             variant='danrsveej'
         )], 
 
@@ -141,7 +141,7 @@ def coyotefox(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(scavenger_mind),
+            axonStr=axonsToHex(scavenger_mind),
             variant='coyotefox'
         )],
         speciesName='coyotefox',
@@ -188,7 +188,7 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(carnivore_mind),
+            axonStr=axonsToHex(carnivore_mind),
             variant='tigerwolf'
         )], 
         speciesName='tigerwolf',
@@ -208,6 +208,7 @@ def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
         Axon(netIndex['creature_exists'], netIndex['action_attack'], 0.77),
         Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 0.88),
+        Axon(netIndex['self_energy'], netIndex['action_howl'], 1.0),
         # Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.88),
         # Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
         # Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
@@ -234,7 +235,7 @@ def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(brain),
+            axonStr=axonsToHex(brain),
             variant='qiltrpolf'
         )], 
         speciesName='qiltrpolf',
@@ -263,7 +264,7 @@ def deerkiller(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(brain),
+            axonStr=axonsToHex(brain),
             variant='deerkiller'
         )], 
         speciesName='killerofdeer',
@@ -289,7 +290,7 @@ def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, br
             sightrange=4, 
             sightfield=4, 
             # brai'faecd86fcc85cb780605854211269566f857727c852876a4aba33057cad8b2b34ce3ffc48f193c143fce1315a975ce3a1514d7bed1ac9d96241fed48',
-            brain=brain,
+            axonStr=brain,
             variant='emptymind'
         )], 
         speciesName='?nothing?',

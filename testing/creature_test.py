@@ -2,7 +2,6 @@ import unittest
 from creatures.genome import *
 from creatures.creature import *
 from creatures import templates
-from world.life import Scenarios, Scene
 from world.map import *
 
 map = Map(20, 10)
