@@ -9,12 +9,12 @@ class testGenome(unittest.TestCase):
         gene1=randomGenome()
         brainLength=len(gene1.brain)
         self.assertTrue(brainLength % 8 == 0)
-        gene1.mutate(1, 'addAxon')
+        gene1.mutate(1, 'axon')
         self.assertTrue(len(gene1.brain) == brainLength + 8)
-        gene1.mutate(1, 'deleteaxon')
+        gene1.mutate(1, 'axon')
         self.assertTrue(len(gene1.brain) == brainLength)
-        gene1.mutate(1, 'doubleaxon')
-        self.assertTrue(len(gene1.brain) == brainLength + 8)
+        gene1.mutate(1, 'axon')
+        self.assertTrue(len(gene1.brain) == brainLength)
         self.assertTrue(gene1.brain.find('FF') >= 0)
 
     def testMerging(self):
@@ -30,7 +30,7 @@ class testGenome(unittest.TestCase):
             planteating=1, 
             sightrange=1, 
             sightfield=1,
-            brain='11111111111111111111111111111111111111',
+            axonStr='11111111111111111111111111111111111111',
             variant='11111111',
             mutations=1
         )
@@ -46,7 +46,7 @@ class testGenome(unittest.TestCase):
             planteating=9, 
             sightrange=9, 
             sightfield=9,
-            brain='99999999999999999999999999999999999999',
+            axonStr='99999999999999999999999999999999999999',
             variant='99999999',
             mutations = 9
         )
