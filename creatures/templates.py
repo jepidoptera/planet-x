@@ -1,45 +1,70 @@
 from creatures.creature import *
 from creatures.genome import *
+from brain.basics import netIndex
+from brain import brain
 
-def axonsToHex(axons: list[Axon]):
-    return ''.join([str(axon) for axon in axons])
+# def axonsToHex(axons: list[Axon]):
+#     return ''.join([str(axon) for axon in axons])
 
 def randomAxon(): 
     return ''.join(random.choice('abcdef1234567890') for n in range(8))
 
+def Axon(input: int, output: int, factor: float):
+    return (hex(input)[:2].zfill(2) 
+        + hex(output)[:2].zfill(2) 
+        + hex(min(int((factor + 1)*0x8000), 0xffff))[2:].zfill(4)
+    )
+
+def DoubleAxon(input: list[int], output: int, operator: int, threshold: float, factor: float):
+        return (
+            'FF' + 
+            hex(operator)[2:].zfill(2) + 
+            hex(int(threshold * 0xff))[2:].zfill(2) + 
+            hex(input[0].index)[2:].zfill(2) + 
+            hex(input[1].index)[2:].zfill(2) + 
+            hex(output.index)[2:].zfill(2) +
+            hex(min(int((factor + 1)*0x8000), 0xffff))[2:].zfill(4)
+        )
+
 def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
-    herbivore_mind = [
-        Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['action_flee'], netIndex['memory_0'], 1.0),
-        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
-        Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
+    herbivore_mind: brain.V1=brain.V1.unpack(
+        axons=''.join([
+            Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
+            Axon(netIndex['action_flee'], netIndex['memory_0'], 1.0),
+            Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
+            Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
 
-        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
-        DoubleAxon(
-            input=[netIndex['self_energy'], netIndex['creature_similarity']],
-            output=netIndex['action_mate'],
-            operator=DoubleAxon.operators['and'],
-            threshold=0.9,
-            factor=1.0
-        ),
-        Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+            Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+            DoubleAxon(
+                input=[netIndex['self_energy'], netIndex['creature_similarity']],
+                output=netIndex['action_mate'],
+                operator=DoubleAxon.operators['and'],
+                threshold=0.9,
+                factor=1.0
+            ),
+            Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
 
-        Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
-        Axon(netIndex['memory_7'], netIndex['relay_7'], 0.5),
-        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
-        Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
-        Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
-        Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
-        Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
-        Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
-        Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
-        Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
+            Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
+            Axon(netIndex['memory_7'], netIndex['relay_7'], 0.5),
+            Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
+            Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
+            Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
+            Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
+            Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
+            Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
+            Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
+            Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
 
-        Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
-        Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
-        Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
-        Axon(netIndex['self_sprints'], netIndex['action_rest'], -1.0),
-    ]
+            Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
+            Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
+            Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
+            Axon(netIndex['self_sprints'], netIndex['action_rest'], -1.0),
+        ])
+    )
+    neurons=[0 for _ in range(len(brain))]
+    neurons[netIndex['action_wander']]=0.1
+    herbivore_mind.loadBiases(neurons)
+
     return Creature(
         location=location,
         genomes=[Genome(
@@ -54,7 +79,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=7, 
             sightrange=4, 
             sightfield=3, 
-            brain=axonsToHex(herbivore_mind),
+            brain=herbivore_mind,
             variant='deersheep'
         )], 
         speciesName='deersheep',
@@ -63,7 +88,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     )
 
 def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
-    deerbrain=axonsToHex([
+    deerbrain=''.join([
         DoubleAxon(
             input=[netIndex['creature_similarity'], netIndex['self_energy']],
             output=netIndex['action_mate'],

@@ -7,8 +7,7 @@ import math
 import random
 from creatures.genome import Genome, mergeString, modString
 from world.map import *
-import typing
-
+from brain.brain import Action, Stimulus
 debug=-1
 
 class NeuronType(Enum):
@@ -398,6 +397,7 @@ class Creature():
         if self.energy < 0: 
             self.health += self.energy
             self.energy=0
+
         # un sprint
         self.sprints = max(self.sprints-1, 0)
 
@@ -423,7 +423,7 @@ class Creature():
             if self.victim.location in self.location.neighbors:
                 self.direction=self.location.neighbors.index(self.victim.location)
                 self.victim.health -= self.deadliness
-                Creature.processStimulus(self.victim, stimulusType='injury', target=self, magnitude=self.deadliness)
+                self.victim.brain.process(Stimulus(stimulusType='injury', object=self, magnitude=self.deadliness))
                 if self.victim.dead: self.victim=None
             elif Map.getDistance(self.location, self.victim.location) > self.sightrange:
                 # lost them
@@ -591,71 +591,17 @@ class Creature():
             neuron.clear()
 
     def processVision(self, vision:list[list[MapNode]]) -> list[ActionOption]:
-        actionOptions: list[ActionOption]=[]
+        stimuli: list[Stimulus]=[]
 
         for distance, layer in enumerate(vision):
             for node in layer:
                 if (node.occupant and node.occupant != self):
-                    other=node.occupant
-                    actionOptions.append(self.processStimulus(stimulusType='creature', target=other, magnitude=1))
+                    stimuli.append(Stimulus(object=node.occupant, distance=distance))
 
                 elif (node.resource):
-                    if node.resource.type == ResourceType.grass and netIndex['see_grass'].activation: continue
-                    if node.resource.type == ResourceType.meat and netIndex['see_meat'].activation: continue
-                    actionOptions.append(self.processStimulus(stimulusType='food', target=node))
+                    stimuli.append(Stimulus(object=node, distance=distance))
 
-        return actionOptions
 
-    def processStimulus(self, stimulusType:str='', target:any=None,  magnitude:float=1.0):
-        if not target: target=self
-        for neuron in self.creatureNeurons + self.relayNeurons + self.actionNeurons:
-            neuron.clear()
-
-        if stimulusType == 'birth':
-            netIndex['self_birth'].activate(1)
-        elif stimulusType == 'injury':
-            netIndex['self_injury'].activate(magnitude)
-
-        if target == self:
-            for sensor in self.selfNeurons:
-                sensor.sense(self)
-            for axon in self.selfAxons:
-                axon.fire()
-        
-        elif type(target) == MapNode:
-            for sensor in self.envNeurons:
-                sensor.sense(target.resource)
-            for axon in self.envAxons:
-                axon.fire()
-        elif type(target) == Creature:
-            for sensor in self.creatureNeurons:
-                sensor.sense(self, target)
-                # oh that's quite beautiful 👍
-            for axon in self.creatureAxons:
-                axon.fire()
-
-        # the order is important here vvv
-        for axon in self.memoryAxons + self.relayAxons:
-            axon.fire()
-
-        if target == self:
-            netIndex['action_attack'].clear()
-            netIndex['action_eat'].clear()
-            netIndex['action_mate'].clear()
-        if stimulusType == 'food':
-            netIndex['action_attack'].clear()
-            netIndex['action_flee'].clear()
-            netIndex['action_mate'].clear()
-        if stimulusType == 'creature':
-            netIndex['action_attack'].activation += netIndex['action_eat'].activation
-            netIndex['action_eat'].clear()
-            if self.energy < self.size: netIndex['action_mate'].clear()
-            if netIndex['creature_similarity'].activation < 0.5: 
-                netIndex['action_mate'].clear()
-                # self.energy -= 1
-
-        out=max(*[self.actionNeurons], key=lambda n: n.activation)
-        return ActionOption(out.action, target, out.activation * magnitude, out)
 
     def printStats(self):
         print('deadliness: ', self.deadliness)
