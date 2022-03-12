@@ -7,16 +7,19 @@ class testGenome(unittest.TestCase):
 
     def testMutations(self):
         gene1=randomGenome()
-        brainLength=len(gene1.brain)
+        brainLength=len(gene1.axonStr)
+        old=gene1.axonStr
         self.assertTrue(brainLength % 8 == 0)
-        gene1.mutate(1, 'axon')
-        self.assertTrue(len(gene1.brain) == brainLength + 8)
-        gene1.mutate(1, 'axon')
-        self.assertTrue(len(gene1.brain) == brainLength)
-        gene1.mutate(1, 'axon')
-        self.assertTrue(len(gene1.brain) == brainLength)
-        self.assertTrue(gene1.brain.find('FF') >= 0)
+        for n in range(32): gene1.mutate(1, 'axon')
+        self.assertTrue(len(gene1.axonStr) == brainLength)
+        self.assertTrue(gene1.axonStr != old)
 
+        brainLength=len(gene1.neuronStr)
+        old=gene1.neuronStr
+        for n in range(32): gene1.mutate(1, 'neuron')
+        self.assertTrue(len(gene1.neuronStr) == brainLength)
+        self.assertTrue(gene1.neuronStr != old)
+        
     def testMerging(self):
         gene1 = Genome(
             deadliness=1, 
