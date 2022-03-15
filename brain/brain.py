@@ -3,30 +3,33 @@ from brain.basics import *
 # import typing
 from creatures.creature import Creature
 from world.map import MapNode
+import copy
 
 sign=lambda x: 1 if x > 0 else (-1 if x < 0 else 0)
 
 class V1(Brain):
-        # list[Neuron](
-        # )
-    def __init__(self, speciesName: str, axons: list[Axon], neurons: list[Neuron]):
-        super().__init__(speciesName=speciesName)
-        if axons: self.axons
-
-    def process(self, *stimuli: Stimulus) -> tuple[str, any]:
+    def process(self, stimuli: list[Stimulus]) -> tuple[str, any]:
+        options: list[Action]=[]
+        selfCreature=stimuli[0].object
         for stimulus in stimuli:
             object=stimulus.object
+            event=stimulus.event
             self.clear()
-            if type(object) == Creature and stimulus.distance <= 0:
+            if type(object) == Creature and stimulus.distance == 0:
                 # self
                 for sensor in self.selfNeurons:
                     sensor.sense(object)
+                if event == "birth":
+                    self.neurons[netIndex['self_birth']].activate(1.0)
 
             elif type(object) == Creature:
                 for sensor in self.creatureNeurons:
-                    sensor.sense(object)
+                    sensor.sense(selfCreature, object)
                 for axon in self.creatureAxons:
                     axon.fire()
+                
+                if event == 'injury':
+                    self.neurons[netIndex['self_injury']].activate(1.0)
 
             elif type(object) == MapNode:
                 # food, probably
@@ -35,127 +38,39 @@ class V1(Brain):
                 for axon in self.envAxons:
                     axon.fire()
 
-            for axon in self.selfAxons + self.relayAxons + self.memoryAxons + self.actionAxons:
+            for axon in self.selfAxons + self.actionAxons + self.memoryAxons + self.relayAxons:
                 axon.fire()
 
-
-    
-    def unpack(self, axonStr: str='', neuronStr: str=''):
-        # def get_key(val, dict: dict):
-        #     for key, value in dict.items():
-        #         if val == value:
-        #             return key
-        if axonStr:
-            def fromHex(hexcode):
-                if len(hexcode) == 8:
-                    input = int(hexcode[:2], 16) % 0x60
-                    output = int(hexcode[2:4], 16) % 0x60
-                    factor = int(hexcode[4:8], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
-                    
-                    if not input in self.allNeurons or not output in self.allNeurons:
-                        return None
-
-                    return Axon(
-                        input=self.allNeurons[input],
-                        output=self.allNeurons[output], 
-                        factor=factor
-                    )
-                elif len(hexcode) == 16:
-                    operator=int(hexcode[2:4], 16) % 0xf8
-                    threshold=int(hexcode[4:6], 16)/0xff
-                    input1=int(hexcode[6:8], 16) % 0x60
-                    input2=int(hexcode[8:10], 16) % 0x60
-                    output=int(hexcode[10:12], 16) % 0x60
-                    factor=int(hexcode[12:16], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
-
-                    if not input1 in self.allNeurons or not input2 in self.allNeurons or not output in self.allNeurons:
-                        return None
-
-                    return DoubleAxon(
-                        input=[self.allNeurons[n] for n in [input1, input2]],
-                        output=self.allNeurons[output],
-                        threshold=threshold,
-                        operator=operator,
-                        factor=factor
-                    )
-                else:
-                    raise Exception(f"invalid hex code length ({len(hexcode)}), can't generate axon")
-
-            doubleAxon=False
-            self.actionAxons=[]
-            self.relayAxons=[]
-            self.memoryAxons=[]
-            self.creatureAxons=[]
-            self.envAxons=[]
-            self.selfAxons=[]
-            for n in range(int(len(axonStr)/8)):
-                if doubleAxon:
-                    doubleAxon=False
-                    continue
+            if type(object) == MapNode or object == selfCreature:
+                self.neurons[netIndex['action_attack']].clear()
+                self.neurons[netIndex['action_mate']].clear()
+                self.neurons[netIndex['action_flee']].clear()
+            if type(object) == Creature:
+                self.neurons[netIndex['action_attack']].activate(
+                    self.neurons[netIndex['action_eat']].activation
+                )
+                self.neurons[netIndex['action_eat']].clear()
+                if selfCreature.getSimilarity(object) < 0.5:
+                    self.neurons[netIndex['action_mate']].clear()
                 
-                if int(axonStr[n*8: n*8 + 2], 16) != 0xff:
-                    axon=fromHex(axonStr[n * 8: (n + 1) * 8])
-                else:
-                    axon=fromHex(axonStr[n*8: (n+2)*8])
-                    doubleAxon=True
 
-                if (axon.input.type == NeuronType.action
-                    or type(axon) == DoubleAxon 
-                    and axon.input2.type == NeuronType.action
-                ):
-                    self.actionAxons.append(axon)
-
-                elif (axon.input.type == NeuronType.relay
-                    or type(axon) == DoubleAxon 
-                    and axon.input2.type == NeuronType.relay
-                ):
-                    self.relayAxons.append(axon)
-
-                elif (axon.input.type == NeuronType.creature
-                    or type(axon) == DoubleAxon 
-                    and axon.input2.type == NeuronType.creature
-                ):
-                    self.creatureAxons.append(axon)
-
-                elif (axon.input.type == NeuronType.environment
-                    or type(axon) == DoubleAxon 
-                    and axon.input2.type == NeuronType.environment
-                ):
-                    self.envAxons.append(axon)
-
-                elif (axon.input.type == NeuronType.self
-                    or type(axon) == DoubleAxon 
-                    and axon.input2.type == NeuronType.self
-                ):
-                    self.selfAxons.append(axon)
-
-                elif (axon.input.type == NeuronType.memory
-                    or type(axon) == DoubleAxon 
-                    and axon.input2.type == NeuronType.memory
-                ):
-                    self.memoryAxons.append(axon)
-
-            self.allAxons=self.creatureAxons + self.envAxons + self.selfAxons + self.memoryAxons + self.relayAxons + self.actionAxons
-        
-        if neuronStr:
-            for n in range(len(neuronStr)//4):
-                self.allNeurons[int(n[:2], 16)].bias=(int(n[2:], 16) / 0xff -0.5)*2
-
-        return self
-
-    def loadBiases(self, biases: list[float]):
-        for n, b in enumerate(biases):
-            self.allNeurons[n]=b
-        return self
-
-    def getSimilarity(self, other: Creature) -> float:
-        similarity=0.0
-        commonRange=range(min(len(self.speciesName), len(other.speciesName)))
-        increment=1/len(commonRange)
-        for c in commonRange:
-            if self.speciesName[c] == other.speciesName[c]: similarity += increment
-        return similarity
+            impulse=max(self.actionNeurons, key=lambda n: n.activation)
+            options.append(Action(
+                act=impulse.action,
+                object=object,
+                weight=impulse.activation
+            ))
+        return max(options, key=lambda option: option.weight)
+    
+    def merge(self, *others: Brain):
+        newBrain=copy.deepcopy(self)
+        newBrain.axons=Brain.mergeAxons(self.axons, *[other.axons for other in others])
+        newBrain.biases=Brain.mergeNeurons(self.biases, *[other.biases for other in others])
+        return newBrain
 
     def clear(self):
-        for neuron in self.allNeurons:
+        for neuron in self.creatureNeurons + self.envNeurons + self.actionNeurons:
             neuron.clear()
+
+
+# initialize=V1()
