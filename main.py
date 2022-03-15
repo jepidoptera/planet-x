@@ -9,10 +9,10 @@ from world import life
 # life.defaulMapWidth=os.getenv('MAP_WIDTH') or life.defaultMapWidth
 # life.defaulMapHeight=os.getenv('MAP_HEIGHT') or life.defaultMapHeight
 
-still = True
-filename= '' # 'sugkrdeey superdeer 132807' # 'demtvazej danrsveej 71907' # 'deersheep tigerwolf 225'
+still=True
+filename='' # 'sugkrdeey superdeer 132807' # 'demtvazej danrsveej 71907' # 'deersheep tigerwolf 225'
 # dirname='species/'
-scenario: life.Scene = None
+scenario: life.Scene=None
 
 argList=sys.argv[1:]
 args, values=getopt.getopt(argList, 'af:s:')
