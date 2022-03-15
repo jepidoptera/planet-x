@@ -250,11 +250,11 @@ def cycle(creatures: set[Creature]):
     aliveCreatures=set(creatures)
     for creature in aliveCreatures:
         
-        creature.thinkTimer += creature.intelligence/2
-        if creature.thinkTimer > thoughtThreshold:
-            creature.thinkTimer -= thoughtThreshold
-            creature.think()
-            creature.energy -= len(creature.brain)/metaconstant
+        # creature.thinkTimer += creature.intelligence/2
+        # if creature.thinkTimer > thoughtThreshold:
+        #     creature.thinkTimer -= thoughtThreshold
+        #     creature.think()
+        #     creature.energy -= len(creature.brain)/metaconstant
 
         creature.moveTimer += creature.speed
         if creature.moveTimer > moveThreshold:
