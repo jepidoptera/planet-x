@@ -9,8 +9,8 @@ from typing import Callable
 import analysis
 
 dirname: str='species/'
-defaultMapWidth=240
-defaultMapHeight=160
+defaultMapWidth=480
+defaultMapHeight=320
 
 # this is the global metabolic rate, affecting all creatures
 # adjust down to make life harder, up to make it easier
@@ -55,7 +55,7 @@ class Scene():
     def basicWorld():
         return Map(defaultMapWidth,defaultMapHeight).populateGrass(value=20, density=0.2)
 
-    def growGrass(world: Map, number: int=0, value: float=5):
+    def growGrass(world: Map, number: int=0, value: float=1):
         if not(number): number=int(len(world.nodes)/1200)
         nodes=[random.choice(world.nodes) for _ in range(number)]
         for node in nodes:
