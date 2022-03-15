@@ -225,7 +225,7 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
     )
 def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     # designed with the help of evolution
-    brain=[
+    axons=[
         DoubleAxon(
             input=[netIndex['creature_similarity'], netIndex['self_energy']],
             output=netIndex['action_mate'],
@@ -236,19 +236,17 @@ def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
         Axon(netIndex['creature_exists'], netIndex['action_attack'], 0.77),
         Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 0.88),
-        Axon(netIndex['self_energy'], netIndex['action_howl'], 1.0),
-        # Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.88),
-        # Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        # Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        # Axon(netIndex['creature_similarity'], netIndex['action_turnleft'], 1.0),
-        # Axon(netIndex['self_energy'], netIndex['action_mate'], 0.1),
-        # Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        # Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        # Axon(netIndex['creature_similarity'], netIndex['action_continue'], 0.69),
-        # Axon(netIndex['action_attack'], netIndex['memory_0'], 0.69),
-        # Axon(netIndex['memory_0'], netIndex['action_sprint'], 0.69),
-        # Axon(netIndex['action_eat'], netIndex['memory_0'], -1.0),
+        DoubleAxon(
+            input=[netIndex['self_energy'], netIndex['creature_exists']],
+            output=netIndex['action_howl'],
+            threshold=1.0,
+            operator=operators['and'],
+            factor=0.4
+        )
     ]
+    neurons={
+        netIndex['action_wander']: 0.1,
+    }
     return Creature(
         location=location,  
         genomes=[Genome(
@@ -263,10 +261,12 @@ def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            axonStr=axonsToHex(brain),
+            axons=axons,
+            neurons=neurons,
             variant='qiltrpolf'
         )], 
         speciesName='qiltrpolf',
+        brain=brain.V1(),
         energy=energy,
         mutate=mutate
     )
