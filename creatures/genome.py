@@ -107,6 +107,7 @@ class Genome():
         mutations: int=0
     ):
 
+
         # gene=Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
 
         self.stats:dict[str: Stat]={
@@ -125,6 +126,7 @@ class Genome():
         self.phenomize()
         self.axons=axons
         self.neurons=neurons
+
         self.mutations=mutations
         self.variant=variant or ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(9)])
         # *size
@@ -242,6 +244,7 @@ class Genome():
                     if not neuronNum in self.neurons: self.neurons[neuronNum]=0
                     neuronBias=self.neurons[neuronNum]
                     self.neurons[neuronNum]=max(min(neuronBias + random.random()*0.2 - 0.1, 1), -1)
+
                 # addAxon=(
                 #     True if mutationType in ['addaxon', 'doubleaxon'] 
                 #     else int(random.random()*1.5)

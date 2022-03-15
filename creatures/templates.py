@@ -70,6 +70,7 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             sightfield=3, 
             axons=axons,
             neurons=neurons,
+
             variant='deersheep'
         )], 
         speciesName='deersheep',
