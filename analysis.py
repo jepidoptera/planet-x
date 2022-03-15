@@ -81,6 +81,6 @@ def graphPopulations():
     pyplot.plot([n for n in range(len(herbivores))], herbivores, color='g') 
 
 
-    pyplot.show()    
+    # pyplot.show()    
 
-graphPopulations()
+# graphPopulations()
