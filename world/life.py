@@ -55,7 +55,7 @@ class Scene():
     def basicWorld():
         return Map(defaultMapWidth,defaultMapHeight).populateGrass(value=20, density=0.2)
 
-    def growGrass(world: Map, number: int=0, value: float=1.25):
+    def growGrass(world: Map, number: int=0, value: float=1):
         if not(number): number=int(len(world.nodes)/1200)
         nodes=[random.choice(world.nodes) for _ in range(number)]
         for node in nodes:
@@ -250,11 +250,11 @@ def cycle(creatures: set[Creature]):
     aliveCreatures=set(creatures)
     for creature in aliveCreatures:
         
-        creature.thinkTimer += creature.intelligence/2
-        if creature.thinkTimer > thoughtThreshold:
-            creature.thinkTimer -= thoughtThreshold
-            creature.think()
-            creature.energy -= len(creature.brain)/metaconstant
+        # creature.thinkTimer += creature.intelligence/2
+        # if creature.thinkTimer > thoughtThreshold:
+        #     creature.thinkTimer -= thoughtThreshold
+        #     creature.think()
+        #     creature.energy -= len(creature.brain)/metaconstant
 
         creature.moveTimer += creature.speed
         if creature.moveTimer > moveThreshold:

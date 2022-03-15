@@ -4,7 +4,7 @@ import random
 
 sign=lambda x: 1 if x > 0 else (-1 if x < 0 else 0)
 
-class ResourceType(Enum):
+class ResourceType():
     grass='grass'
     fruit='fruit'
     meat='meat'

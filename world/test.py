@@ -5,7 +5,8 @@ mapHeight = 20
 testmap = Map(mapWidth, mapHeight)
 centerTile = testmap.nodes[int(mapWidth * mapHeight / 2 + mapHeight / 2)]
 # calcVisionTree(testmap.nodes[146], 8)
-for n in range(0, 12):
+for n in range(0, 13):
+    print (f'field of view = {n/2}')
     # testmap.printVisionCone(centerTile, n, 7, 2)
     vision=centerTile.getVision(5, int(12-n/2), n/2)
     for node in testmap.nodes:

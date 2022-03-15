@@ -2,6 +2,8 @@ from math import inf as infinity
 from random import random
 import random
 
+from brain.basics import *
+
 # genome
 class Stat():
     min=0
@@ -86,7 +88,25 @@ class Stamina(Stat):
 class Genome():
     mutationRate=1
     mutations=0
-    def __init__(self, deadliness: int, speed: int, stamina:int, fortitude: int, intelligence: int, longevity: int, fertility: int, meateating: int, planteating: int, sightrange: int, sightfield: int, axonStr: str, neuronStr: str='', variant: str='', mutations: int=0):
+    def __init__(
+        self, 
+        deadliness: int, 
+        speed: int, 
+        stamina:int, 
+        fortitude: int, 
+        intelligence: int, 
+        longevity: int, 
+        fertility: int, 
+        meateating: int, 
+        planteating: int, 
+        sightrange: int, 
+        sightfield: int, 
+        axons: list[Axon], 
+        neurons: dict[int: float]={}, 
+        variant: str='', 
+        mutations: int=0
+    ):
+
 
         # gene=Genome(energy=1, deadliness=1, speed=1, stamina=4, fortitude=4, intelligence=13, longevity=6, fertility=9, meateating=1, planteating=7, sightrange=5, sightfield=3,brain='345979023qr79fa70450b0734ec3098e90283b')
 
@@ -104,8 +124,9 @@ class Genome():
             "sight field": SightField(value=sightfield)
         }
         self.phenomize()
-        self.axonStr=axonStr
-        self.neuronStr=neuronStr
+        self.axons=axons
+        self.neurons=neurons
+
         self.mutations=mutations
         self.variant=variant or ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(9)])
         # *size
@@ -207,16 +228,23 @@ class Genome():
                 # replace axons only - or more likely, adjust the weights and biases
                 axonMutation=True if mutationType=='axon' else int(random.random()*2)
                 if axonMutation:
-                    axonNum=int(random.random()*len(self.axonStr)//8)
-                    weight=int(self.axonStr[axonNum*8 + 4: axonNum*8 + 8], 16)
-                    weight=int(max(min(0xffff, weight + random.random() * 0x1000 - 0x800), 0))
-                    self.axonStr=self.axonStr[:axonNum*8 + 4] + hex(weight)[2:].zfill(4) + self.axonStr[axonNum*8 + 8:]
+                    # axonNum=int(random.random()*len(self.axonStr)//8)
+                    # weight=int(self.axonStr[axonNum*8 + 4: axonNum*8 + 8], 16)
+                    # weight=int(max(min(0xffff, weight + random.random() * 0x1000 - 0x800), 0))
+                    # self.axonStr=self.axonStr[:axonNum*8 + 4] + hex(weight)[2:].zfill(4) + self.axonStr[axonNum*8 + 8:]
+                    axon=random.choice(self.axons)
+                    axon._factor=max(min(axon._factor + random.random()*0.2 - 0.1, 1), -1)
                 else:
-                    neuronNum=int(random.random()*len(self.neuronStr)//4)
-                    print (neuronNum, self.neuronStr)
-                    bias=int(self.neuronStr[neuronNum*4 + 2: neuronNum*4 + 4], 16)
-                    bias=int(max(min(0xff, bias + random.random() * 0x10 - 0x8), 0))
-                    self.neuronStr=self.neuronStr[:neuronNum*4 + 2] + hex(bias)[2:].zfill(2) + self.neuronStr[neuronNum*4 + 4:]
+                    # neuronNum=int(random.random()*len(self.neuronStr)//4)
+                    # print (neuronNum, self.neuronStr)
+                    # bias=int(self.neuronStr[neuronNum*4 + 2: neuronNum*4 + 4], 16)
+                    # bias=int(max(min(0xff, bias + random.random() * 0x10 - 0x8), 0))
+                    # self.neuronStr=self.neuronStr[:neuronNum*4 + 2] + hex(bias)[2:].zfill(2) + self.neuronStr[neuronNum*4 + 4:]
+                    neuronNum=random.choice(list(netKeys.keys()))
+                    if not neuronNum in self.neurons: self.neurons[neuronNum]=0
+                    neuronBias=self.neurons[neuronNum]
+                    self.neurons[neuronNum]=max(min(neuronBias + random.random()*0.2 - 0.1, 1), -1)
+
                 # addAxon=(
                 #     True if mutationType in ['addaxon', 'doubleaxon'] 
                 #     else int(random.random()*1.5)
@@ -245,7 +273,8 @@ class Genome():
         genes=self.variant + '|' + str(self.mutations) + '|'
         for value in self.stats.values():
             genes += hex(value.value)[2:].zfill(2)
-        genes += '0X' + self.axonStr
+        genes += '0X' + Brain.encodeAxons(self.axons)
+        genes += '0Y' + Brain.encodeNeurons(self.neurons)
         return genes
 
     def printStats(self):
@@ -280,8 +309,15 @@ def randomGenome():
         planteating=int(random.random() * (PlantEating.max + 1)),
         sightrange=int(random.random() * (SightRange.max + 1)),
         sightfield=int(random.random() * (SightField.max) + 1),
-        axonStr="".join(random.choice('abcdef1234567890') for i in range(64)),
-        neuronStr="".join("".join([hex(i)[2:].zfill(2) + "".join(random.choice('abcdef1234567890') for _ in range(2))]) for i in range(0x60)),
+        axons=[
+            Axon(
+                input=netIndex[random.choice(list(netIndex.keys()))], 
+                output=netIndex[random.choice(list(netIndex.keys()))], 
+                factor=random.random()*2 - 1
+            )
+            for n in range(16)
+        ],
+        neurons={n: random.random()*2 - 1 for n in netIndex.values()},
         variant=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(9)])
     )
 
@@ -298,7 +334,8 @@ def emptyGenome():
         planteating=0,
         sightrange=0,
         sightfield=0,
-        axonStr="",
+        axons=[],
+        neurons={},
         variant=''
     )
 
@@ -317,7 +354,8 @@ def merge(*args: Genome) -> Genome:
         planteating=random.choice([g._planteating for g in args]),
         sightrange=random.choice([g._sightrange for g in args]),
         sightfield=random.choice([g._sightfield for g in args]),
-        axonStr=mergeBrains(*[g.axonStr for g in args]),
+        axons=Brain.mergeAxons(*[g.axons for g in args]),
+        neurons=Brain.mergeNeurons(*[g.axons for g in args]),
         variant=mergeString(*[g.variant for g in args], chunk=1)
     )
     return merged
@@ -329,46 +367,6 @@ def mergeString(*args: str, chunk: int=1) -> str:
         genes=[arg[n*chunk:(n+1)*chunk] if len(arg) >= n*chunk else '' for arg in args]
         mergeStr += random.choice(genes)
     return mergeStr
-
-def mergeBrains(*args: str):
-    def similarity(s1: str, s2: str):
-        sim=0
-        for n in range(min(len(s1), len(s2))):
-            if s1[n] == s2[n]:
-                sim += 1
-        return sim/min(len(s1), len(s2))
-
-    class MergeableBrain:
-        def __init__(self, brain: str):
-            self.axons=[brain[n*8:(n+1)*8] for n in range(len(brain)//8)]
-            self._mergePos=0
-            self.finished=False
-        @property
-        def currentAxon(self):
-            return self.axons[self._mergePos]
-        def next(self):
-            self._mergePos += 1
-            if self._mergePos == len(self.axons): self.finished=True
-
-    parsedOut=0
-    brains=[MergeableBrain(brain) for brain in args]
-    newBrain: str=''
-    while parsedOut < len(brains):
-        remainingBrains=list(filter(lambda brain: not brain.finished, brains))
-        if len(remainingBrains) == 0: break
-        newAxon=random.choice(
-            [brain.currentAxon
-            for brain in remainingBrains]
-        )
-        newBrain += newAxon
-        for brain in brains:
-            brain.next()
-            if brain.finished: 
-                continue
-            if similarity(brain.currentAxon, newAxon) > 0.8:
-                brain.next()
-
-    return newBrain
 
 def modString(string: str, char: chr, position: int) -> str:
     return string[:position] + char + string[position+1:]
@@ -384,8 +382,10 @@ def decode(genes: str) -> Genome:
     for i, stat in enumerate(g.stats.keys()):
         g.stats[stat].value=int(genes[2*i:2*i+2], 16)
     g.phenomize()
-    brain=genes[genes.index('0X')+2:]
-    g.axonStr=brain
+    axonStr=genes[genes.index('0X') + 2: genes.index('0Y')]
+    g.axons=Brain.decodeAxons(axonStr)
+    neuronStr=genes[genes.index('0Y') + 2:]
+    g.neurons=Brain.decodeNeurons(neuronStr)
     return g
 
 Genome.merge=staticmethod(merge)

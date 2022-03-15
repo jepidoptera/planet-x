@@ -1,155 +1,14 @@
 # good start
 # you made a file!
 # 288 lines long now. got about ten other files as well
-from cgi import MiniFieldStorage
-from enum import Enum
+# ok now it's 762 lines
 import math
 import random
 from creatures.genome import Genome, mergeString, modString
 from world.map import *
-from brain.brain import Action, Stimulus
+from brain.basics import Action, Stimulus, Brain
+import copy
 debug=-1
-
-class NeuronType(Enum):
-    self=0
-    creature=1
-    environment=2
-    memory=3
-    relay=4
-    action=5
-
-class Neuron():
-    activation:float
-    sense:typing.Callable
-    action:typing.Callable
-    type:NeuronType
-    name:str
-    bias:float
-    def __init__(self, type: NeuronType, name:str='', sense: typing.Callable=None, action: typing.Callable=None, bias: float=0.0):
-        self.activation=0.0
-        self._sense=sense
-        self.action=action
-        self.type=type
-        self.name=name
-        self.bias=bias
-        if not name in netIndex: netIndex[name]=self
-    def sense(self, *args):
-        self.activate(self._sense(*args))
-    def activate(self, amount):
-        self.activation += amount
-    def clear(self):
-        self.activation=self.bias
-# 🙌🏾
-
-class MemNeuron(Neuron):
-    sense=None
-    action=None
-    type=NeuronType.memory
-    threshold=0.5
-    strength=1.0
-
-    def __init__(self, memstate:bool=True, name:str=''):
-        super().__init__(NeuronType.memory, name=name)
-        self.memState=memstate
-    def activate(self, amount):
-        if abs(amount) > self.threshold: self.memState=1 if amount > 0 else 0
-        self.clear()
-    def clear(self):
-        self.activation=self.memState * self.strength
-
-class Axon():
-    def __init__(self, input: Neuron, output: Neuron, factor: float):
-        self.input=input
-        self.output=output
-        self.factor=factor
-
-
-    def fire(self):
-        self.output.activate(self.input.activation * self.factor)
-
-    def __str__(self) -> str:
-        return (
-            hex(Creature.allNeurons.index(self.input))[2:].zfill(2) + 
-            hex(Creature.allNeurons.index(self.output))[2:].zfill(2) +
-            hex(min(int((self.factor + 1)*0x8000), 0xffff))[2:].zfill(4)
-        )
-
-class DoubleAxon(Axon):
-    operators={
-        'and': 0,
-        'or': 1,
-        'nor': 2,
-        'xor': 3,
-        'and not': 4
-    }
-    def __init__(self, input: list[Neuron], output: Neuron, threshold: float, operator: int, factor: float):
-        
-        self._input=input
-        self.output: Neuron=output
-        self.threshold=threshold
-        self.factor=factor
-        self.operator=operator
-
-    def fire(self):
-        # there is room for up to 256 different operators
-        # just probably gonna use 8
-        if self.operator == 0:
-            # AND
-            if (self._input[0].activation >= self.threshold and self._input[1].activation >= self.threshold):
-                self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
-        elif self.operator == 1:
-            # OR
-            if (self._input[0].activation >= self.threshold or self._input[1].activation >= self.threshold):
-                self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
-        elif self.operator == 2:
-            # NOR 
-            if (self._input[0].activation < self.threshold and self._input[1].activation < self.threshold):
-                self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
-        elif self.operator == 3:
-            # XOR
-            if ((self._input[0].activation >= self.threshold) ^ (self._input[1].activation >= self.threshold)):
-                self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
-        elif self.operator == 4:
-            # and not
-            if (self._input[0].activation >= self.threshold and not self._input[1].activation >= self.threshold):
-                self.output.activate(max(self._input[0].activation, self._input[1].activation) * self.factor)
-
-    @property
-    def input(self):
-        return self._input[0]
-
-    @property
-    def input2(self):
-        return self._input[1]
-
-    def __str__(self) -> str:
-        return (
-            'FF' + 
-            hex(self.operator)[2:].zfill(2) + 
-            hex(int(self.threshold * 0xff))[2:].zfill(2) + 
-            hex(Creature.allNeurons.index(self._input[0]))[2:].zfill(2) + 
-            hex(Creature.allNeurons.index(self._input[1]))[2:].zfill(2) + 
-            hex(Creature.allNeurons.index(self.output))[2:].zfill(2) +
-            hex(min(int((self.factor + 1)*0x8000), 0xffff))[2:].zfill(4)
-        )
-
-
-class ActionOption():
-    def __init__(self, action: typing.Callable, target: any, weight: float, relevantNeuron: Neuron):
-        self.action=action
-        self.target=target
-        self.weight=weight
-        self.neuron=relevantNeuron
-
-class Action():
-    attack='attack'
-    flee='flee'
-    mate='mate'
-    eat='eat'
-    wander='wander'
-    rest='rest'
-
-netIndex: dict[str, Neuron]={}
 
 class Creature():
     victim: any=None
@@ -159,28 +18,15 @@ class Creature():
     food: Resource=None
     path: list[MapNode]=[]
 
-    selfNeurons: list[Neuron]
-    creatureNeurons: list[Neuron]
-    envNeurons: list[Neuron]
-    relayNeurons: list[Neuron]
-    actionNeurons: list[Neuron]
-
-    selfAxons: set[Axon]
-    creatureAxons: set[Axon]
-    envAxons: set[Axon]
-    memoryAxons: set[Axon]
-    relayAxons: set[Axon]
-    actionAxons: set[Axon]
-
     def __init__(self, 
             location: MapNode, 
             genomes: list[Genome],
             energy: float=100, 
             speciesName: str='',
             offspringCount: int=0,
-            brain: str='',
             age: int=0,
-            mutate: bool=False
+            mutate: bool=False,
+            brain: Brain=None
         ):
 
         self.uniqueID=self.__hash__()
@@ -209,12 +55,15 @@ class Creature():
         self.sightrange=int(sum([g.sightrange for g in self.genome])/len(genomes))
         self.sightfield=int(sum([g.sightfield for g in self.genome])/len(genomes))
         self.size=sum([g.size.value for g in self.genome])/len(genomes)
-        self.brain=brain or mergeString(*[g.brain for g in self.genome], chunk=8)
+        # self.axonStr=axonStr or mergeString(*[g.axonStr for g in self.genome], chunk=8)
+        # self.neuronStr=neuronStr or mergeString(*[g.neuronStr for g in self.genome], chunk=8)
         self.speciesName=speciesName or mergeString(*[g.variant for g in self.genome])
 
         self.action=Action.rest
+        self.hearing: list[Stimulus]=[]
+        self.feeling: list[Stimulus]=[]
         self.age=age
-        self.justBorn=True
+        self.justBorn=(self.age==0)
         self.offspringCount=offspringCount
         self._health=self.fortitude
         self.energy=energy
@@ -229,15 +78,15 @@ class Creature():
         self.thinkTimer=int(random.random() * self.intelligence)
         self.moveTimer=int(random.random() * self._speed)
 
-        # instantiate memory neurons specific to this creature 
-        # the rest are shared across all creatures to save space
-        # memory needs to be specific to each creature, though
-        self.memNeurons:list[Neuron]=[MemNeuron(False, name=f'memory_{n}') for n in range(8)]
-        self.allNeurons:list[Neuron]=self.creatureNeurons + self.selfNeurons + self.envNeurons + self.memNeurons + self.relayNeurons + self.actionNeurons
-        self.unpackGenome(self.brain)
+        self.brain = brain
+        if not self.brain.axons:
+            self.brain.axons=Brain.mergeAxons(*[g.axons for g in self.genome])
+            self.brain.biases=Brain.mergeNeurons(*[g.neurons for g in self.genome])
+        self.brain.sortAxons()
+        
+        # self.brain.unpack(self.axonStr, self.neuronStr)
 
-        self.clearInputs()
-        self.processStimulus('birth')
+        self.brain.process([Stimulus(self, 'birth', 0)])
 
     @property
     def longevity(self) -> float:
@@ -294,94 +143,6 @@ class Creature():
         self._speed=value
         return self.speed
 
-    def fromHex(self, hexcode) -> Axon:
-
-        if len(hexcode) == 8:
-            input=int(hexcode[:2], 16) % len(self.allNeurons)
-            output=int(hexcode[2:4], 16) % len(self.allNeurons)
-            factor=int(hexcode[4:8], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
-            return Axon(input=self.allNeurons[input], output=self.allNeurons[output], factor=factor)
-
-        elif len(hexcode) == 16:
-            operator=int(hexcode[2:4], 16) % 0xf8
-            threshold=int(hexcode[4:6], 16)/0xff
-            input1=int(hexcode[6:8], 16) % len(self.allNeurons)
-            input2=int(hexcode[8:10], 16) % len(self.allNeurons)
-            output=int(hexcode[10:12], 16) % len(self.allNeurons)
-            factor=int(hexcode[12:16], 16) / 0x8000 - 1 # either positive or negative, 8000 being zero
-            return DoubleAxon(
-                input=[self.allNeurons[n] for n in [input1, input2]], 
-                output=self.allNeurons[output],
-                threshold=threshold,
-                operator=operator,
-                factor=factor
-            )
-
-        else:
-            raise Exception(f"invalid hex code length ({len(hexcode)}), can't generate axon")
-
-    def unpackGenome(self, genome) -> list[Axon]:
-        # first two digits are input neuron
-        # second two are output
-        # what are possible outputs?
-        # attack, mate, eat, flee, wander, think (which), remember (which)
-        doubleAxon=False
-        self.actionAxons=[]
-        self.relayAxons=[]
-        self.memoryAxons=[]
-        self.creatureAxons=[]
-        self.envAxons=[]
-        self.selfAxons=[]
-        for n in range(int(len(genome)/8)):
-            # if n >= self.intelligence: break
-            if doubleAxon:
-                doubleAxon=False
-                continue
-            
-            if int(genome[n*8: n*8 + 2], 16) != 0xff:
-                axon=self.fromHex(genome[n * 8: (n + 1) * 8])
-            else:
-                axon=self.fromHex(genome[n*8: (n+2)*8])
-                doubleAxon=True
-
-            if (axon.input.type == NeuronType.action
-                or type(axon) == DoubleAxon 
-                and axon.input2.type == NeuronType.action
-            ):
-                self.actionAxons.append(axon)
-
-            elif (axon.input.type == NeuronType.relay
-                or type(axon) == DoubleAxon 
-                and axon.input2.type == NeuronType.relay
-            ):
-                self.relayAxons.append(axon)
-
-            elif (axon.input.type == NeuronType.creature
-                or type(axon) == DoubleAxon 
-                and axon.input2.type == NeuronType.creature
-            ):
-                self.creatureAxons.append(axon)
-
-            elif (axon.input.type == NeuronType.environment
-                or type(axon) == DoubleAxon 
-                and axon.input2.type == NeuronType.environment
-            ):
-                self.envAxons.append(axon)
-
-            elif (axon.input.type == NeuronType.self
-                or type(axon) == DoubleAxon 
-                and axon.input2.type == NeuronType.self
-            ):
-                self.selfAxons.append(axon)
-
-            elif (axon.input.type == NeuronType.memory
-                or type(axon) == DoubleAxon 
-                and axon.input2.type == NeuronType.memory
-            ):
-                self.memoryAxons.append(axon)
-
-        return self.creatureAxons + self.envAxons + self.selfAxons + self.memoryAxons + self.relayAxons + self.actionAxons
-
     def animate(self) -> str:
         if self.speciesName == 'tigerwolf':
             er=1
@@ -400,6 +161,8 @@ class Creature():
 
         # un sprint
         self.sprints = max(self.sprints-1, 0)
+
+        self.think()
 
         if self.action == Action.eat and self.food:
             if self.location.resource == self.food:
@@ -423,7 +186,7 @@ class Creature():
             if self.victim.location in self.location.neighbors:
                 self.direction=self.location.neighbors.index(self.victim.location)
                 self.victim.health -= self.deadliness
-                self.victim.brain.process(Stimulus(stimulusType='injury', object=self, magnitude=self.deadliness))
+                self.victim.feeling.append(Stimulus(object=self, event='injury'))
                 if self.victim.dead: self.victim=None
             elif Map.getDistance(self.location, self.victim.location) > self.sightrange:
                 # lost them
@@ -434,6 +197,7 @@ class Creature():
 
         elif self.action == Action.mate and self.mate:
             if self.mate.location in self.location.neighbors:
+
                 if self.energy > self.size + self.size/self.fertility and self.fertility > self.offspringCount:
                     self.energy -= self.size
                     self.energy -= self.size/self.fertility
@@ -450,6 +214,7 @@ class Creature():
                             Genome.merge(*self.mate.genome).mutate()
                         ], 
                         energy=self.size/self.fertility,
+                        brain=copy.deepcopy(self.brain),
                         speciesName=newName
                         if int(random.random()*10)>0 else
                         modString(newName, random.choice('abcdefghijklmnopqrstuvwxyz'), int(random.random() * len(newName)))
@@ -471,6 +236,38 @@ class Creature():
 
         return self.action
             
+    def think(self) -> Action:
+        # think about what to do
+        decision = self.brain.process(
+            [Stimulus(self, distance=0)]
+            + self.hearing
+            + self.feeling
+            + self.scanVision()
+        )
+        self.hearing=[]
+        self.feeling=[]
+        if decision.act == Action.attack:
+            self.attack(decision.object)
+        elif decision.act == Action.eat:
+            self.seekFood(decision.object)
+        elif decision.act == Action.mate:
+            self.seekMate(decision.object)
+        elif decision.act == Action.flee:
+            self.flee(decision.object)
+        elif decision.act == Action.rest:
+            self.rest()
+        elif decision.act == Action.move:
+            self.moveForward()
+        elif decision.act == Action.wander:
+            self.wander()
+        elif decision.act == Action.turnLeft:
+            self.turnLeft()
+        elif decision.act == Action.turnRight:
+            self.turnRight()
+        elif decision.act == Action.howl:
+            self.howl()
+        return self.action
+
     def seekFood(self, foodLocation: MapNode):
         self.food=foodLocation.resource
         if self.location == foodLocation:
@@ -518,65 +315,97 @@ class Creature():
         self.action=Action.wander
         return self
 
-    def turnLeft(self, _=None):
+    def turnLeft(self):
         # works
         self.direction=(self.direction - 1 + len(self.location.neighbors)) % len(self.location.neighbors)
+        self.action=Action.turnLeft
         return self
 
-    def turnRight(self, _=None):
+    def turnRight(self):
         self.direction=(self.direction + 1) % len(self.location.neighbors)
+        self.action=Action.turnRight
         return self
 
     def faceDirection(self, direction):
         self.direction=direction
         return self
 
-    def moveForward(self, _=None):
+    def moveForward(self):
         self.path=[self.location.neighbors[self.direction]]
+        self.action=Action.move
+        return self
 
-    def rest(self, _=None):
+    def rest(self):
         self.path=[]
         self.action=Action.rest
+        return self
+
+    def howl(self):
+        # any creature within 20 tiles in every direction will hear
+        earshot=self.location.getVision(0, 20, 6)
+        for distance in earshot:
+            for node in distance:
+                if node.occupant:
+                    node.occupant.hearing.append(Stimulus(self, 'howl', distance=distance))
+        self.action=Action.howl
+        return self
 
     def die(self):
         self.location.resource=Resource(ResourceType.meat, self.energy + self.size)
         self.location.occupant=None
         self._dead=True
+        return self
 
-    def think(self) -> str:
-        if self.speciesName == 'killerofdeer':
-            er=1
-        if self.uniqueID == debug:
-            er=1
-        if self.dead: return "dead'"
+    # def think(self) -> str:
+    #     if self.speciesName == 'killerofdeer':
+    #         er=1
+    #     if self.uniqueID == debug:
+    #         er=1
+    #     if self.dead: return "dead'"
 
-        self.clearInputs()
-        options=[self.processStimulus(target=self)]
-        options += self.processVision(self.location.getVision(self.direction, self.sightrange, self.sightfield))
-        action=max(options, key=lambda option: option.weight)
-        action.action(self, action.target)
+    #     self.action=self.brain.process(self.hearing + self.scanVision())
 
-        # propagate this action into the net, potentially setting memory neurons
-        for neuron in self.actionNeurons: neuron.clear()
-        action.neuron.activate(1)
-        for axon in self.actionAxons:
-            axon.fire()
+    #     self.clearInputs()
+    #     options=[self.processStimulus(target=self)]
+    #     options += self.scanVision(self.location.getVision(self.direction, self.sightrange, self.sightfield))
+    #     action=max(options, key=lambda option: option.weight)
+    #     action.action(self, action.target)
 
-        return action.neuron.name
+    #     # propagate this action into the net, potentially setting memory neurons
+    #     for neuron in self.actionNeurons: neuron.clear()
+    #     action.neuron.activate(1)
+    #     for axon in self.actionAxons:
+    #         axon.fire()
 
-    def getVisionRanges(self) -> list[list[MapNode]]:
-        cones=[
-            self.location.visionTree[(self.direction + n) % len(self.location.neighbors)][:self.sightrange] 
-            for n in [-int(n / 2) if n % 2 == 0 else int(n / 2) + 1 
-            for n in range((self.sightfield - 1) * 2 + 1)] 
-        ]
-        visionLayers=[
-            # get a separate array of nodes for each distance from self.location
-            [node for cone in [[cones[a][b] 
-            for a in range(len(cones))] for b in range(self.sightrange)][i] 
-            for node in cone] for i in range(self.sightrange)
-        ]
-        return [[self.location]] + visionLayers
+    #     return action.neuron.name
+
+    # def getVisionRanges(self) -> list[list[MapNode]]:
+    #     cones=[
+    #         self.location.visionTree[(self.direction + n) % len(self.location.neighbors)][:self.sightrange] 
+    #         for n in [-int(n / 2) if n % 2 == 0 else int(n / 2) + 1 
+    #         for n in range((self.sightfield - 1) * 2 + 1)] 
+    #     ]
+    #     visionLayers=[
+    #         # get a separate array of nodes for each distance from self.location
+    #         [node for cone in [[cones[a][b] 
+    #         for a in range(len(cones))] for b in range(self.sightrange)][i] 
+    #         for node in cone] for i in range(self.sightrange)
+    #     ]
+    #     return [[self.location]] + visionLayers
+
+    def scanVision(self) -> list[Stimulus]:
+        vision=self.location.getVision(self.direction, self.sightrange, self.sightfield)
+        stimuli: list[Stimulus]=[]
+
+        for distance, layer in enumerate(vision):
+            for node in layer:
+                if (node.occupant and node.occupant != self):
+                    stimuli.append(Stimulus(object=node.occupant, distance=distance))
+
+                if (node.resource and (not node.occupant or node.occupant == self)):
+                    stimuli.append(Stimulus(object=node, distance=distance))
+
+        return stimuli
 
     def getSimilarity(self, other) -> float:
         similarity=0.0
@@ -585,23 +414,6 @@ class Creature():
         for c in commonRange:
             if self.speciesName[c] == other.speciesName[c]: similarity += increment
         return similarity
-
-    def clearInputs(self):
-        for neuron in self.allNeurons:
-            neuron.clear()
-
-    def processVision(self, vision:list[list[MapNode]]) -> list[ActionOption]:
-        stimuli: list[Stimulus]=[]
-
-        for distance, layer in enumerate(vision):
-            for node in layer:
-                if (node.occupant and node.occupant != self):
-                    stimuli.append(Stimulus(object=node.occupant, distance=distance))
-
-                elif (node.resource):
-                    stimuli.append(Stimulus(object=node, distance=distance))
-
-
 
     def printStats(self):
         print('deadliness: ', self.deadliness)
@@ -613,7 +425,7 @@ class Creature():
         print('intelligence: ', self.intelligence)
         print('sight range: ', self.sightrange)
         print('field of view: ', self.sightfield)
-        print('brain dna: ', self.brain)
+        print('brain dna: ', self.brain.toJson())
 
         print('age: ', self.age)
         print('health: ', self.health)
@@ -623,8 +435,16 @@ class Creature():
     def toJson(self) -> dict:
         obj = {
             'genomes': [self.genome[n].encode() for n in range(len(self.genome))],
+            'deadliness': self.deadliness,
+            'toughness': self.fortitude,
+            'speed': self.speed,
+            'stamina': self.stamina,
+            'longevity': self.longevity,
+            'fertility': self.fertility,
+            'vision': f'{self.sightfield} x {self.sightrange}',
+            'diet': 'meat' if self.meateating > self.planteating else 'plants',
             'age': self.age,
-            'brain': self.brain,
+            'brain': self.brain.toJson(),
             'energy': self.energy,
             'location': self.location.index,
             'speciesName': self.speciesName,
@@ -650,60 +470,3 @@ def fromJson(j:dict, location: MapNode=MapNode()) -> Creature:
     return newCreature
 
 Creature.fromJson=staticmethod(fromJson)
-
-Creature.creatureNeurons=list[Neuron]([
-    Neuron(NeuronType.creature, name='creature_deadliness', sense=lambda self, other: min(other.deadliness/self.health, 1) if self.health else 0),
-    Neuron(NeuronType.creature, name='creature_age', sense=lambda self, other: other.age/other.longevity),
-    Neuron(NeuronType.creature, name='creature_health', sense=lambda self, other: other.health/other.fortitude),
-    Neuron(NeuronType.creature, name='creature_similarity', sense=lambda self, other: self.getSimilarity(other)),
-    Neuron(NeuronType.creature, name='creature_speed', sense=lambda self, other: sign(other.speed-self.speed)),
-    Neuron(NeuronType.creature, name='creature_exists', sense=lambda self, other: True)
-])
-
-Creature.selfNeurons=list[Neuron]([
-    Neuron(NeuronType.self, name='self_energy', sense=lambda self: self.energy/self.size if self.size else 0),
-    Neuron(NeuronType.self, name='self_health', sense=lambda self: self.health/self.fortitude if self.health else 0),
-    Neuron(NeuronType.self, name='self_age', sense=lambda self: self.age/self.longevity if self.longevity else 0),
-    Neuron(NeuronType.self, name='self_sprints', sense=lambda self: 1 if self.sprints else 0),
-    Neuron(NeuronType.self, name='self_birth', sense=lambda self: 0), # just born
-    Neuron(NeuronType.self, name='self_injury', sense=lambda self: 0), # under attack
-    Neuron(NeuronType.self, name='is_self', sense=lambda self: True),
-    Neuron(NeuronType.self, name='self_sometimes', sense=lambda self: int(self.age % 7 == 0)), 
-    Neuron(NeuronType.self, name='self_rarely', sense=lambda self: int(self.age % 77 == 0)) 
-])
-
-Creature.envNeurons=list[Neuron]([
-    Neuron(NeuronType.environment, name='see_meat', sense=lambda resource: 1 if resource.type==ResourceType.meat else 0),
-    Neuron(NeuronType.environment, name='see_fruit', sense=lambda resource: 1 if resource.type==ResourceType.fruit else 0),
-    Neuron(NeuronType.environment, name='see_grass', sense=lambda resource: 1 if resource.type==ResourceType.grass else 0),
-    Neuron(NeuronType.environment, name='see_tree', sense=lambda resource: 1 if resource.type==ResourceType.tree else 0)
-])
-
-Creature.relayNeurons=list[Neuron]([Neuron(NeuronType.relay, name=f'relay_{n}') for n in range(8)])
-
-Creature.actionNeurons=list[Neuron]([
-    Neuron(NeuronType.action, name='action_attack', action=Creature.attack),
-    Neuron(NeuronType.action, name='action_flee', action=Creature.flee),
-    Neuron(NeuronType.action, name='action_mate', action=Creature.seekMate),
-    Neuron(NeuronType.action, name='action_eat', action=Creature.seekFood),
-    Neuron(NeuronType.action, name='action_turnleft', action=Creature.turnLeft),
-    Neuron(NeuronType.action, name='action_turnright', action=Creature.turnRight),
-    Neuron(NeuronType.action, name='action_move', action=Creature.moveForward),
-    Neuron(NeuronType.action, name='action_sprint', action=Creature.sprint),
-    Neuron(NeuronType.action, name='action_rest', action=Creature.rest),
-    Neuron(NeuronType.action, name='action_wander', action=Creature.wander, bias=0.05),
-    Neuron(NeuronType.action, name='action_continue', action=lambda x, y: x)
-])
-
-# these are class level placeholders
-Creature.memNeurons=list[Neuron]([MemNeuron(False, name=f'memory_{n}') for n in range(8)])
-
-# leave in place. this one too
-Creature.allNeurons=list[Neuron](
-    Creature.creatureNeurons + 
-    Creature.selfNeurons + 
-    Creature.envNeurons + 
-    Creature.memNeurons + 
-    Creature.relayNeurons + 
-    Creature.actionNeurons
-)

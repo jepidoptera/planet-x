@@ -62,3 +62,25 @@ def analysePop(world: Map, creatures: set[Creature]):
         grass=sum([node.resource.value if node.resource and node.resource.type == ResourceType.grass else 0 for node in world.nodes])
         meat=sum([node.resource.value if node.resource and node.resource.type == ResourceType.meat else 0 for node in world.nodes])
         file.write(f'carnivores: {carnivores} \n herbivores: {herbivores} \n available grass: {grass} \n available meat: {meat} \n')
+
+def graphPopulations():
+    from matplotlib import pyplot
+    with open ('trends.txt', 'r') as file:
+        data=file.readlines()
+        carnivores=[int(data[n * 4][data[n * 4].find(':')+1:]) for n in range(int(len(data)/4))]
+        herbivores=[int(data[n * 4 + 1][data[n * 4 + 1].find(':')+1:]) for n in range(int(len(data)/4))]
+
+    # x-axis values 
+    roll_num = [1, 2, 3, 4, 5, 6, 7, 8, 9] 
+
+    # y-axis values 
+    marks = [55,75,96,75,36,45,87,99,100] 
+
+
+    pyplot.plot([n for n in range(len(carnivores))], carnivores, color='r') 
+    pyplot.plot([n for n in range(len(herbivores))], herbivores, color='g') 
+
+
+    # pyplot.show()    
+
+# graphPopulations()

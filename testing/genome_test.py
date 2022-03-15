@@ -7,16 +7,25 @@ class testGenome(unittest.TestCase):
 
     def testMutations(self):
         gene1=randomGenome()
-        old=gene1.axonStr
-        self.assertTrue(len(gene1.axonStr) % 8 == 0)
-        self.assertTrue(len(gene1.neuronStr) % 4 == 0)
-        gene1.mutate(32, 'axon')
-        self.assertTrue(gene1.axonStr != old)
-        self.assertTrue(len(gene1.axonStr) == len(old))
-        old=gene1.neuronStr
-        gene1.mutate(32, 'neuron')
-        self.assertTrue(gene1.neuronStr != old)
-        self.assertTrue(len(gene1.neuronStr) == len(old))
+        oldAxons=copy.deepcopy(gene1.axons)
+        for n in range(32): gene1.mutate(1, 'axon')
+        self.assertTrue(len(gene1.axons) == len(oldAxons))
+        self.assertTrue(len(list(filter(
+            lambda a: (
+                gene1.axons[a]._factor != oldAxons[a]._factor
+            ),
+            list(range(len(gene1.axons)))
+        ))))
+
+        oldNeurons=copy.copy(gene1.neurons)
+        for n in range(32): gene1.mutate(1, 'neuron')
+        self.assertTrue(len(gene1.neurons.keys()) == len(oldNeurons.keys()))
+        self.assertTrue(len(list(filter(
+            lambda a: (
+                gene1.neurons[a] != oldNeurons[a]
+            ),
+            list(gene1.neurons.keys())
+        ))))
 
     def testMerging(self):
         gene1 = Genome(
@@ -31,8 +40,9 @@ class testGenome(unittest.TestCase):
             planteating=1, 
             sightrange=1, 
             sightfield=1,
-            axonStr='11111111111111111111111111111111111111',
             variant='11111111',
+            axons=[1, 1, 1, 1],
+            neurons={1: 1},
             mutations=1
         )
         gene2 = Genome(
@@ -47,29 +57,32 @@ class testGenome(unittest.TestCase):
             planteating=9, 
             sightrange=9, 
             sightfield=9,
-            axonStr='99999999999999999999999999999999999999',
             variant='99999999',
+            axons=[9, 9, 9, 9],
+            neurons={9: 9},
             mutations = 9
         )
         gene3=Genome.merge(gene1, gene2)
         gene3.printRawStats()
-        print(gene3.brain)
 
         [self.assertTrue(char in [1, 9])
             for char in [
                 v.value for v in gene3.stats.values()
             ] + 
             [
-                int(c) for c in gene3.brain
+                int(c) for c in gene3.axons
+            ] +
+            [
+                int(c) for c in gene3.neurons.keys()
+            ] +
+            [
+                int(c) for c in gene3.neurons.values()
             ] +
             [
                 int(c) for c in gene3.variant
             ]
         ]
         self.assertTrue(gene3.mutations == 9)
-
-        newBrain=mergeBrains ('1111111100000000bbbbbbbb', '555555557777777700000000bbbbbbbb')
-        self.assertTrue(newBrain.count('0') < 9)
 
     def testEncoding(self):
         g=randomGenome()
@@ -79,8 +92,22 @@ class testGenome(unittest.TestCase):
         longevity=g._longevity
         meateating=g._meateating
         
-        # this should have zero net result
+        # this should have zero net result (except for rounding errors)
         g=decode(g.encode())
+
+        axonInputs=[axon.input for axon in g.axons]
+        axonOutputs=[axon.output for axon in g.axons]
+        axonWeights=[round(axon.factor, 3) for axon in g.axons]
+        neuronBiases=[(key, round(value, 3)) for (key, value) in g.neurons.items()]
+        # at this point the rounding errors are already baked in so there should really be no result
+        # except that for some reason there is occasionally an additional rounding error at the fifth decimal place or so
+        # so, we round to three significant digits
+        g=decode(g.encode())
+
+        self.assertTrue(axonInputs == [axon.input for axon in g.axons])
+        self.assertTrue(axonOutputs == [axon.output for axon in g.axons])
+        self.assertTrue(axonWeights == [round(axon.factor, 3) for axon in g.axons])
+        self.assertTrue(neuronBiases == [(key, round(value, 3)) for (key, value) in g.neurons.items()])
 
         self.assertTrue(variant == g.variant)
         self.assertTrue(deadliness == g._deadliness)

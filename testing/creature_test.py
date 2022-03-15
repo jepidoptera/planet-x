@@ -2,36 +2,42 @@ import unittest
 from creatures.genome import *
 from creatures.creature import *
 from creatures import templates
-from world.life import Scenarios, Scene
 from world.map import *
+from brain.basics import *
+from brain import brain
 
 map = Map(20, 10)
 
 class testCreature(unittest.TestCase):
 
     def test_brain(self):
+        testingBrain=brain.V1(
+            axons=[
+                DoubleAxon(
+                    input=[netIndex['self_sometimes'], netIndex['memory_6']],
+                    output=netIndex['action_move'],
+                    threshold=0.5,
+                    operator=DoubleAxon.operators['and'],
+                    factor=1.0
+                ),
+                Axon(
+                    input=netIndex['self_birth'],
+                    output=netIndex['memory_6'],
+                    factor=1.0
+                )
+            ],
+            neurons={
+                netIndex['action_wander']: -1
+            }
+        )
+
         creature=templates.empty(
             map.nodes[114],
-            brain=str(DoubleAxon(
-                input=[netIndex['self_sometimes'], netIndex['memory_6']],
-                output=netIndex['action_move'],
-                threshold=0.5,
-                operator=DoubleAxon.operators['and'],
-                factor=1.0
-            ))+str(Axon(
-                input=netIndex['self_birth'],
-                output=netIndex['memory_6'],
-                factor=1.0
-            ))+str(Axon( # don't wander
-                input=netIndex['self_always'],
-                output=netIndex['action_wander'],
-                factor=-1.0
-            ))
+            brain=testingBrain
         )
         creature.direction=0
-        self.assertTrue(type(creature.selfAxons[0]) == DoubleAxon)
+        self.assertTrue(type(creature.brain.selfAxons[0]) == DoubleAxon)
 
-        thought=creature.think()
         action=creature.animate()
 
         self.assertTrue(creature.location.index == 113)
@@ -45,10 +51,9 @@ class testCreature(unittest.TestCase):
         carnivore.direction=4
         herbivore_action=herbivore.think()
         carnivore_action=carnivore.think()
-        self.assertTrue(herbivore_action == 'action_flee')
-        self.assertTrue(carnivore_action == 'action_attack')
+        self.assertTrue(herbivore_action == Action.flee)
+        self.assertTrue(carnivore_action == Action.attack)
         for n in range(5):
-            herbivore_action=herbivore.think()
             herbivore.animate()
         self.assertTrue(Map.getDistance(herbivore.location, carnivore.location) > 8)
         
@@ -60,7 +65,6 @@ class testCreature(unittest.TestCase):
 
         self.assertTrue(herbivore._dead)
 
-        carnivore.think()
         carnivore.animate()
         carnivore.animate()
 
@@ -72,7 +76,7 @@ class testCreature(unittest.TestCase):
         herbivore.direction = 2
         map.nodes[114].resource=Resource(ResourceType.grass, 100) 
         herbivore_action=herbivore.think()
-        self.assertTrue(herbivore_action == 'action_eat')
+        self.assertTrue(herbivore_action == Action.eat)
         for n in range(5):
             herbivore.animate()
         self.assertTrue (herbivore.energy > 100)
@@ -85,8 +89,8 @@ class testCreature(unittest.TestCase):
         creature2.direction = 0
         creature1_action=creature1.think()
         creature2_action=creature2.think()
-        self.assertTrue(creature1_action == 'action_mate')
-        self.assertTrue(creature2_action == 'action_mate')
+        self.assertTrue(creature1_action == Action.mate)
+        self.assertTrue(creature2_action == Action.mate)
         for n in range(5):
             creature1.animate()
         self.assertTrue(type(creature1.offspring)==Creature)
@@ -101,8 +105,8 @@ class testCreature(unittest.TestCase):
         creature2.direction = 0
         creature1_action=creature1.think()
         creature2_action=creature2.think()
-        self.assertTrue(creature1_action == 'action_mate')
-        self.assertTrue(creature2_action == 'action_mate')
+        self.assertTrue(creature1_action == Action.mate)
+        self.assertTrue(creature2_action == Action.mate)
         for n in range(5):
             creature1.animate()
         self.assertTrue(type(creature1.offspring)==Creature)

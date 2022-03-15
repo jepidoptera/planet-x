@@ -2,68 +2,57 @@ from creatures.creature import *
 from creatures.genome import *
 from brain.basics import netIndex
 from brain import brain
+from brain.basics import *
 
-# def axonsToHex(axons: list[Axon]):
-#     return ''.join([str(axon) for axon in axons])
+operators=DoubleAxon.operators
 
 def randomAxon(): 
     return ''.join(random.choice('abcdef1234567890') for n in range(8))
 
-def Axon(input: int, output: int, factor: float):
-    return (hex(input)[:2].zfill(2) 
-        + hex(output)[:2].zfill(2) 
-        + hex(min(int((factor + 1)*0x8000), 0xffff))[2:].zfill(4)
-    )
+# def Axon(input: int, output: int, factor: float):
+#     return (hex(input)[2:].zfill(2) 
+#         + hex(output)[2:].zfill(2) 
+#         + hex(min(int((factor + 1)*0x8000), 0xffff))[2:].zfill(4)
+#     )
 
-def DoubleAxon(input: list[int], output: int, operator: int, threshold: float, factor: float):
-        return (
-            'FF' + 
-            hex(operator)[2:].zfill(2) + 
-            hex(int(threshold * 0xff))[2:].zfill(2) + 
-            hex(input[0].index)[2:].zfill(2) + 
-            hex(input[1].index)[2:].zfill(2) + 
-            hex(output.index)[2:].zfill(2) +
-            hex(min(int((factor + 1)*0x8000), 0xffff))[2:].zfill(4)
-        )
+# def DoubleAxon(input: list[int], output: int, operator: int, threshold: float, factor: float):
+#         return (
+#             'FF' + 
+#             hex(operator)[2:].zfill(2) + 
+#             hex(int(threshold * 0xff))[2:].zfill(2) + 
+#             hex(input[0])[2:].zfill(2) + 
+#             hex(input[1])[2:].zfill(2) + 
+#             hex(output)[2:].zfill(2) +
+#             hex(min(int((factor + 1)*0x8000), 0xffff))[2:].zfill(4)
+#         )
+
 
 def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
-    herbivore_mind: brain.V1=brain.V1.unpack(
-        axons=''.join([
-            Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
-            Axon(netIndex['action_flee'], netIndex['memory_0'], 1.0),
-            Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
-            Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
+    axons=[
+        Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
+        Axon(netIndex['action_flee'], netIndex['memory_0'], 1.0),
+        Axon(netIndex['creature_similarity'], netIndex['action_mate'], 0.5),
+        Axon(netIndex['see_grass'], netIndex['action_eat'], 1.0),
 
-            Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
-            DoubleAxon(
-                input=[netIndex['self_energy'], netIndex['creature_similarity']],
-                output=netIndex['action_mate'],
-                operator=DoubleAxon.operators['and'],
-                threshold=0.9,
-                factor=1.0
-            ),
-            Axon(netIndex['self_energy'], netIndex['action_mate'], 0.5),
+        DoubleAxon(
+            input=[netIndex['self_energy'], netIndex['creature_similarity']],
+            output=netIndex['action_mate'],
+            operator=operators['and'],
+            threshold=0.9,
+            factor=1.0
+        ),
+        Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
+        Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
+        Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
+        Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
+        Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
+        Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
 
-            Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
-            Axon(netIndex['memory_7'], netIndex['relay_7'], 0.5),
-            Axon(netIndex['self_energy'], netIndex['action_eat'], -0.1),
-            Axon(netIndex['relay_7'], netIndex['action_mate'], -1.0),
-            Axon(netIndex['self_energy'], netIndex['relay_7'], -1.0),
-            Axon(netIndex['self_sprints'], netIndex['action_rest'], 1.0),
-            Axon(netIndex['self_injury'], netIndex['memory_5'], 1.0),
-            Axon(netIndex['self_injury'], netIndex['action_flee'], 1.0),
-            Axon(netIndex['memory_5'], netIndex['action_rest'], -0.4),
-            Axon(netIndex['action_rest'], netIndex['memory_5'], 1.0),
-
-            Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
-            Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
-            Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
-            Axon(netIndex['self_sprints'], netIndex['action_rest'], -1.0),
-        ])
-    )
-    neurons=[0 for _ in range(len(brain))]
-    neurons[netIndex['action_wander']]=0.1
-    herbivore_mind.loadBiases(neurons)
+        Axon(netIndex['memory_0'], netIndex['action_sprint'], 1.0),
+        Axon(netIndex['action_sprint'], netIndex['memory_0'], -1.0),
+        Axon(netIndex['self_sprints'], netIndex['action_rest'], -1.0),
+    ]
+    neurons={netIndex['action_wander']:0.1}
 
     return Creature(
         location=location,
@@ -79,21 +68,24 @@ def herbivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=7, 
             sightrange=4, 
             sightfield=3, 
-            brain=herbivore_mind,
+            axons=axons,
+            neurons=neurons,
+
             variant='deersheep'
         )], 
         speciesName='deersheep',
+        brain=brain.V1(),
         energy=100,
         mutate=mutate
     )
 
 def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
-    deerbrain=''.join([
+    axons=[
         DoubleAxon(
             input=[netIndex['creature_similarity'], netIndex['self_energy']],
             output=netIndex['action_mate'],
             threshold=0.9,
-            operator=DoubleAxon.operators['and'],
+            operator=operators['and'],
             factor=0.5
         ),
         Axon(netIndex['see_grass'], netIndex['action_eat'], 0.7),
@@ -110,11 +102,12 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             input=[netIndex['memory_0'], netIndex['memory_1']],
             output=netIndex['action_turnleft'],
             threshold=1.0,
-            operator=DoubleAxon.operators['and not'],
+            operator=operators['and not'],
             factor=0.9
         ),
         Axon(netIndex['action_turnleft'], netIndex['memory_0'], -0.9),
-    ])
+    ]
+    neurons={netIndex['action_wander']:0.1}
 
     return Creature(
         location=location,
@@ -129,29 +122,33 @@ def danrsveej(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             meateating=0, 
             planteating=7, 
             sightrange=4, 
-            sightfield=3, 
-            brain=deerbrain,
+            sightfield=4, 
+            axons=axons,
+            neurons=neurons,
             variant='danrsveej'
         )], 
-
+        brain=brain.V1(),
         speciesName='danrsveej',
         energy=100,
         mutate=mutate
     )
 
 def coyotefox(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
-    scavenger_mind = [
+    axons=[
         Axon(netIndex['creature_deadliness'], netIndex['action_flee'], 1.0),
         DoubleAxon(
             input=[netIndex['creature_similarity'], netIndex['self_energy']],
             output=netIndex['action_mate'],
             threshold=0.9,
-            operator=DoubleAxon.operators['and'],
+            operator=operators['and'],
             factor=0.5
         ),
         Axon(netIndex['creature_similarity'], netIndex['action_turnleft'], 0.5),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 0.9)
     ]
+    neurons={
+        netIndex['action_wander']: 0.1
+    }
     return Creature(
         location=location, 
         genomes=[Genome(
@@ -166,18 +163,21 @@ def coyotefox(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(scavenger_mind),
+            axons=axons,
+            neurons=neurons,
             variant='coyotefox'
         )],
         speciesName='coyotefox',
+        brain=brain.V1(),
         energy=energy,
         mutate=mutate
     )
 
 def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
-    carnivore_mind = [
+    axons=[
         # attack creatures less deadly than self
         Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -1.0),
+        Axon(netIndex['creature_exists'], netIndex['action_attack'], 1.0),
         # mate with creatures similar to self
         Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
         # don't attack creatures similar to self
@@ -185,9 +185,8 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         # mate with deadly creatures, to sire deadly progeny
         Axon(netIndex['creature_deadliness'], netIndex['action_mate'], 0.1),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        Axon(netIndex['self_sometimes'], netIndex['action_turnleft'], 0.5),
+        Axon(netIndex['self_sometimes'], netIndex['action_turnleft'], 0.2),
+        Axon(netIndex['self_birth'], netIndex['action_rest'], 1.0),
         # Axon(netIndex['creature_size'], netIndex['action_attack'], 0.05)
         # Axon(netIndex['self_birth'], netIndex['memory_7'], 1.0),
         # Axon(netIndex['self_birth'], netIndex['memory_6'], 1.0),
@@ -199,6 +198,9 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
         # Axon(netIndex['self_energy'], netIndex['memory_7'], -0.05),
         # Axon(netIndex['self_sprints'], netIndex['action_rest'], 0.2),
     ]
+    neurons={
+        netIndex['action_wander']: 0.1
+    }
     return Creature(
         location=location,  
         genomes=[Genome(
@@ -213,38 +215,39 @@ def carnivore(location: MapNode=MapNode(), energy: float=100, mutate: bool=False
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(carnivore_mind),
+            axons=axons,
+            neurons=neurons,
             variant='tigerwolf'
         )], 
+        brain=brain.V1(),
         speciesName='tigerwolf',
         energy=energy,
         mutate=mutate
     )
 def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     # designed with the help of evolution
-    brain=[
+    axons=[
         DoubleAxon(
             input=[netIndex['creature_similarity'], netIndex['self_energy']],
             output=netIndex['action_mate'],
             threshold=0.9,
-            operator=DoubleAxon.operators['and'],
+            operator=operators['and'],
             factor=0.5
         ),
         Axon(netIndex['creature_exists'], netIndex['action_attack'], 0.77),
         Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 0.88),
-        # Axon(netIndex['creature_deadliness'], netIndex['action_attack'], -0.88),
-        # Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        # Axon(netIndex['creature_similarity'], netIndex['action_mate'], 1.0),
-        # Axon(netIndex['creature_similarity'], netIndex['action_turnleft'], 1.0),
-        # Axon(netIndex['self_energy'], netIndex['action_mate'], 0.1),
-        # Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        # Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
-        # Axon(netIndex['creature_similarity'], netIndex['action_continue'], 0.69),
-        # Axon(netIndex['action_attack'], netIndex['memory_0'], 0.69),
-        # Axon(netIndex['memory_0'], netIndex['action_sprint'], 0.69),
-        # Axon(netIndex['action_eat'], netIndex['memory_0'], -1.0),
+        DoubleAxon(
+            input=[netIndex['self_energy'], netIndex['creature_exists']],
+            output=netIndex['action_howl'],
+            threshold=1.0,
+            operator=operators['and'],
+            factor=0.4
+        )
     ]
+    neurons={
+        netIndex['action_wander']: 0.1,
+    }
     return Creature(
         location=location,  
         genomes=[Genome(
@@ -259,17 +262,19 @@ def quiltrpolf(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(brain),
+            axons=axons,
+            neurons=neurons,
             variant='qiltrpolf'
         )], 
         speciesName='qiltrpolf',
+        brain=brain.V1(),
         energy=energy,
         mutate=mutate
     )
 
 def deerkiller(location: MapNode=MapNode(), energy: float=100, mutate: bool=False) -> Creature:
     # this thing just kills deer
-    brain=[
+    axons=[
         Axon(netIndex['creature_health'], netIndex['action_attack'], 1.0),
         Axon(netIndex['creature_similarity'], netIndex['action_attack'], -1.0),
         Axon(netIndex['see_meat'], netIndex['action_eat'], 1.0),
@@ -288,17 +293,19 @@ def deerkiller(location: MapNode=MapNode(), energy: float=100, mutate: bool=Fals
             planteating=0, 
             sightrange=7, 
             sightfield=2, 
-            brain=axonsToHex(brain),
+            axons=axons,
+            neurons={netIndex['action_wander']: 0.1},
             variant='deerkiller'
         )], 
         speciesName='killerofdeer',
+        brain=brain.V1(),
         energy=energy,
         mutate=mutate
     )
     killer._metabolism=0
     return killer
 
-def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, brain: str='') -> Creature:
+def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, brain: Brain=None) -> Creature:
     return Creature(
         location=location,
         genomes=[Genome(
@@ -313,22 +320,30 @@ def empty(location: MapNode=MapNode(), energy: float=100, mutate: bool=False, br
             planteating=1, 
             sightrange=4, 
             sightfield=4, 
-            # brai'faecd86fcc85cb780605854211269566f857727c852876a4aba33057cad8b2b34ce3ffc48f193c143fce1315a975ce3a1514d7bed1ac9d96241fed48',
-            brain=brain,
-            variant='emptymind'
+            axons=[],
+            neurons={},
+            variant='?nothing?'
         )], 
+        brain=brain,
         speciesName='?nothing?',
         energy=100,
         mutate=mutate
     )
 
 def rando(location: MapNode=MapNode(), energy: float=100) -> Creature:
-    return Creature(location, [randomGenome(), randomGenome()], energy, speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(9)]))
+    return Creature(
+        location, 
+        [randomGenome(), randomGenome()], 
+        energy=energy, 
+        brain=brain.V1(),
+        speciesName=''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for n in range(9)])
+    )
 
 def cross(*creatures, location: MapNode=MapNode(), mutate: bool=False):
     return Creature(
         location=location, 
         genomes=[merge(*creature.genome) for creature in creatures], 
+        brain=creatures[0].brain.merge(*[creature.brain for creature in creatures[1:]]),
         speciesName=mergeString(*[creature.speciesName for creature in creatures]),
         mutate=mutate
     )
